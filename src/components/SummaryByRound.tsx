@@ -3,15 +3,22 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { ListChecks, UsersThree } from "@phosphor-icons/react"
+import { Button } from "@/components/ui/button"
+import { ListChecks, UsersThree, Trash } from "@phosphor-icons/react"
 import { Meeting } from "@/lib/types"
 import { getMeetingsByRound } from "@/lib/meeting-utils"
+import { toast } from "sonner"
 
 export default function SummaryByRound() {
-  const [meetings] = useKV<Meeting[]>("meetings", [])
+  const [meetings, setMeetings] = useKV<Meeting[]>("meetings", [])
 
   const round1Meetings = getMeetingsByRound(meetings || [], 1)
   const round2Meetings = getMeetingsByRound(meetings || [], 2)
+
+  const handleDeleteMeeting = (meetingId: string, person1: string, person2: string) => {
+    setMeetings((current) => (current || []).filter((m) => m.id !== meetingId))
+    toast.success(`Incontro rimosso: ${person1} con ${person2}`)
+  }
 
   const RoundSection = ({ round, meetings }: { round: 1 | 2; meetings: Meeting[] }) => (
     <div className="space-y-4">
@@ -47,6 +54,14 @@ export default function SummaryByRound() {
                         {meeting.person2}
                       </p>
                     </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleDeleteMeeting(meeting.id, meeting.person1, meeting.person2)}
+                      className="flex-shrink-0 hover:bg-destructive/10 hover:text-destructive"
+                    >
+                      <Trash size={20} weight="duotone" />
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
