@@ -1,5 +1,15 @@
 import { Meeting, Participant } from "./types"
 
+export function personHasMeetingInRound(
+  person: string,
+  round: 1 | 2,
+  allMeetings: Meeting[]
+): boolean {
+  return allMeetings.some(
+    (m) => m.round === round && (m.person1 === person || m.person2 === person)
+  )
+}
+
 export function getAvailablePartners(
   currentPerson: string,
   round: 1 | 2,
@@ -9,8 +19,12 @@ export function getAvailablePartners(
   const meetingsForRound = allMeetings.filter((m) => m.round === round)
   
   const alreadyPairedWith = new Set<string>()
+  const peopleWithMeetings = new Set<string>()
   
   meetingsForRound.forEach((meeting) => {
+    peopleWithMeetings.add(meeting.person1)
+    peopleWithMeetings.add(meeting.person2)
+    
     if (meeting.person1 === currentPerson) {
       alreadyPairedWith.add(meeting.person2)
     } else if (meeting.person2 === currentPerson) {
@@ -20,7 +34,9 @@ export function getAvailablePartners(
   
   return allParticipants.filter(
     (participant) =>
-      participant !== currentPerson && !alreadyPairedWith.has(participant)
+      participant !== currentPerson && 
+      !alreadyPairedWith.has(participant) &&
+      !peopleWithMeetings.has(participant)
   )
 }
 

@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Plus, Users } from "@phosphor-icons/react"
 import { toast } from "sonner"
 import { Meeting, PARTICIPANTS } from "@/lib/types"
-import { getAvailablePartners, meetingExists } from "@/lib/meeting-utils"
+import { getAvailablePartners, meetingExists, personHasMeetingInRound } from "@/lib/meeting-utils"
 
 export default function AddMeeting() {
   const [meetings, setMeetings] = useKV<Meeting[]>("meetings", [])
@@ -19,6 +19,10 @@ export default function AddMeeting() {
     ? getAvailablePartners(selectedPerson, parseInt(selectedRound) as 1 | 2, meetings || [], PARTICIPANTS)
     : []
 
+  const currentPersonHasMeeting = selectedPerson && selectedRound
+    ? personHasMeetingInRound(selectedPerson, parseInt(selectedRound) as 1 | 2, meetings || [])
+    : false
+
   const handleSubmit = () => {
     if (!selectedPerson || !selectedRound || !selectedPartner) {
       toast.error("Compila tutti i campi")
@@ -26,6 +30,11 @@ export default function AddMeeting() {
     }
 
     const round = parseInt(selectedRound) as 1 | 2
+
+    if (personHasMeetingInRound(selectedPerson, round, meetings || [])) {
+      toast.error("Hai già un incontro programmato per questo turno")
+      return
+    }
 
     if (meetingExists(meetings || [], selectedPerson, selectedPartner, round)) {
       toast.error("Questo incontro è già stato programmato")
@@ -111,15 +120,17 @@ export default function AddMeeting() {
           <Select 
             value={selectedPartner} 
             onValueChange={setSelectedPartner}
-            disabled={!selectedPerson || !selectedRound}
+            disabled={!selectedPerson || !selectedRound || currentPersonHasMeeting}
           >
             <SelectTrigger className="h-12 text-base">
               <SelectValue placeholder={
                 !selectedPerson || !selectedRound 
                   ? "Prima seleziona nome e turno" 
-                  : availablePartners.length === 0
-                    ? "Nessuno disponibile"
-                    : "Seleziona la persona"
+                  : currentPersonHasMeeting
+                    ? "Hai già un incontro in questo turno"
+                    : availablePartners.length === 0
+                      ? "Nessuno disponibile"
+                      : "Seleziona la persona"
               } />
             </SelectTrigger>
             <SelectContent>
@@ -130,9 +141,14 @@ export default function AddMeeting() {
               ))}
             </SelectContent>
           </Select>
-          {selectedPerson && selectedRound && availablePartners.length === 0 && (
+          {selectedPerson && selectedRound && currentPersonHasMeeting && (
+            <p className="text-sm text-destructive font-medium">
+              Hai già programmato un incontro per questo turno. Una persona può partecipare a un solo incontro per turno.
+            </p>
+          )}
+          {selectedPerson && selectedRound && !currentPersonHasMeeting && availablePartners.length === 0 && (
             <p className="text-sm text-muted-foreground">
-              Hai già programmato incontri con tutti per questo turno
+              Tutte le persone disponibili hanno già un incontro programmato per questo turno
             </p>
           )}
         </div>
