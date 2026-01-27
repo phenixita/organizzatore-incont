@@ -1,4 +1,4 @@
-import { useKV } from "@github/spark/hooks"
+import { useAzureStorage } from "@/hooks/useAzureStorage"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
@@ -10,7 +10,7 @@ import { getMeetingsByRound } from "@/lib/meeting-utils"
 import { toast } from "sonner"
 
 export default function SummaryByRound() {
-  const [meetings, setMeetings] = useKV<Meeting[]>("meetings", [])
+  const [meetings, setMeetings] = useAzureStorage<Meeting[]>("meetings", [])
 
   const round1Meetings = getMeetingsByRound(meetings || [], 1)
   const round2Meetings = getMeetingsByRound(meetings || [], 2)

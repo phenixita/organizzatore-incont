@@ -25,10 +25,13 @@ dist-ssr
 *.sw?
 
 .env
+.env.local
+.env.production
 **/agent-eval-report*
 packages
 pids
 .file-manifest
 .devcontainer/
 
-.spark-workbench-id
+# Azure
+.azure/

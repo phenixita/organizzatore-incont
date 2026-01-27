@@ -1,19 +1,21 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useAzureStorage } from "@/hooks/useAzureStorage"
 import { CalendarDot } from "@phosphor-icons/react"
-import { useKV } from "@github/spark/hooks"
 import AddMeeting from "./components/AddMeeting"
-import SummaryByRound from "./components/SummaryByRound"
-import SummaryByPerson from "./components/SummaryByPerson"
 import PaymentTracker from "./components/PaymentTracker"
+import SummaryByPerson from "./components/SummaryByPerson"
+import SummaryByRound from "./components/SummaryByRound"
 
 function App() {
-  const [eventTitle] = useKV<string>("event-title", "Incontri 1-a-1")
-  const [eventDescription] = useKV<string>("event-description", "Organizza i tuoi incontri in due turni")
-  const [eventDate] = useKV<string>("event-date", "")
+  const [eventTitle] = useAzureStorage<string>("event-title", "Incontri 1-a-1")
+  const [eventDescription] = useAzureStorage<string>("event-description", "Organizza i tuoi incontri in due turni")
+  const [eventDate] = useAzureStorage<string>("event-date", "")
+  const buildCommit = (import.meta.env.VITE_BUILD_COMMIT || import.meta.env.VITE_GIT_COMMIT || "").trim()
+  const shortCommit = buildCommit ? buildCommit.slice(0, 7) : "dev"
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto max-w-4xl px-4 py-6 md:py-8">
+    <div className="min-h-screen bg-background flex flex-col">
+      <div className="container mx-auto max-w-4xl px-4 py-6 md:py-8 flex-1">
         <header className="mb-8 text-center">
           <div className="flex items-center justify-center gap-3 mb-2">
             <CalendarDot size={40} weight="duotone" className="text-primary" />
@@ -64,6 +66,9 @@ function App() {
           </TabsContent>
         </Tabs>
       </div>
+      <footer className="py-3 text-center text-xs text-muted-foreground">
+        Build: {shortCommit}
+      </footer>
     </div>
   )
 }
