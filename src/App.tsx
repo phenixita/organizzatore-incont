@@ -4,6 +4,7 @@ import { useKV } from "@github/spark/hooks"
 import AddMeeting from "./components/AddMeeting"
 import SummaryByRound from "./components/SummaryByRound"
 import SummaryByPerson from "./components/SummaryByPerson"
+import PaymentTracker from "./components/PaymentTracker"
 
 function App() {
   const [eventTitle] = useKV<string>("event-title", "Incontri 1-a-1")
@@ -31,15 +32,18 @@ function App() {
         </header>
 
         <Tabs defaultValue="add" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-6">
-            <TabsTrigger value="add" className="text-sm md:text-base">
+          <TabsList className="grid w-full grid-cols-4 mb-6">
+            <TabsTrigger value="add" className="text-xs md:text-base">
               Nuovo Incontro
             </TabsTrigger>
-            <TabsTrigger value="by-round" className="text-sm md:text-base">
+            <TabsTrigger value="by-round" className="text-xs md:text-base">
               Per Turno
             </TabsTrigger>
-            <TabsTrigger value="by-person" className="text-sm md:text-base">
+            <TabsTrigger value="by-person" className="text-xs md:text-base">
               Per Persona
+            </TabsTrigger>
+            <TabsTrigger value="payments" className="text-xs md:text-base">
+              Pagamenti
             </TabsTrigger>
           </TabsList>
 
@@ -53,6 +57,10 @@ function App() {
 
           <TabsContent value="by-person" className="mt-0">
             <SummaryByPerson />
+          </TabsContent>
+
+          <TabsContent value="payments" className="mt-0">
+            <PaymentTracker />
           </TabsContent>
         </Tabs>
       </div>

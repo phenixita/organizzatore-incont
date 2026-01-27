@@ -6,6 +6,12 @@ export interface Meeting {
   createdAt: string
 }
 
+export interface PaymentStatus {
+  person: string
+  hasPaid: boolean
+  paidAt?: string
+}
+
 export const PARTICIPANTS = [
   "ALESSANDRA VERONESE",
   "ALESSIO FASSANELLI",
