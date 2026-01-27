@@ -10,7 +10,6 @@ export interface PaymentStatus {
   person: string
   hasPaid: boolean
   paidAt?: string
-  amount?: number
 }
 
 export const PARTICIPANTS = [

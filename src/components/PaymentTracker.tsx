@@ -12,19 +12,17 @@ import { PARTICIPANTS, PaymentStatus } from "@/lib/types"
 
 export default function PaymentTracker() {
   const [treasurerPassword] = useKV<string>("treasurer-password", "")
+  const [paymentAmount] = useKV<number>("payment-amount", 0)
   const [payments, setPayments] = useKV<PaymentStatus[]>("payments", [])
   const [password, setPassword] = useState("")
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
-  const [editingAmount, setEditingAmount] = useState<string | null>(null)
-  const [tempAmount, setTempAmount] = useState("")
 
   useEffect(() => {
     if (!payments || payments.length === 0) {
       const initialPayments = PARTICIPANTS.map((person) => ({
         person,
-        hasPaid: false,
-        amount: 0
+        hasPaid: false
       }))
       setPayments(initialPayments)
     }
@@ -68,46 +66,13 @@ export default function PaymentTracker() {
     }
   }
 
-  const handleUpdateAmount = (person: string, amount: number) => {
-    setPayments((current) => {
-      const updated = (current || []).map((p) => {
-        if (p.person === person) {
-          return {
-            ...p,
-            amount
-          }
-        }
-        return p
-      })
-      return updated
-    })
-    toast.success(`Importo aggiornato per ${person}`)
-  }
-
-  const startEditingAmount = (person: string, currentAmount?: number) => {
-    setEditingAmount(person)
-    setTempAmount(currentAmount?.toString() || "0")
-  }
-
-  const saveAmount = (person: string) => {
-    const amount = parseFloat(tempAmount) || 0
-    handleUpdateAmount(person, amount)
-    setEditingAmount(null)
-    setTempAmount("")
-  }
-
-  const cancelEditing = () => {
-    setEditingAmount(null)
-    setTempAmount("")
-  }
-
   const filteredPayments = (payments || []).filter((p) =>
     p.person.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
   const paidCount = (payments || []).filter((p) => p.hasPaid).length
   const unpaidCount = PARTICIPANTS.length - paidCount
-  const totalCollected = (payments || []).reduce((sum, p) => sum + (p.amount || 0), 0)
+  const totalCollected = paidCount * (paymentAmount || 0)
 
   if (!isAuthenticated) {
     return (
@@ -123,20 +88,37 @@ export default function PaymentTracker() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-col items-center justify-center p-8 bg-gradient-to-br from-accent/10 to-accent/5 rounded-lg border-2 border-accent/20">
-              <p className="text-muted-foreground text-lg mb-2">Totale</p>
-              <p className="text-5xl md:text-6xl font-bold text-accent">
-                €{totalCollected.toFixed(2)}
-              </p>
-              <div className="flex gap-4 mt-6">
-                <Badge variant="default" className="text-base px-4 py-2 bg-green-600 hover:bg-green-700">
-                  <CheckCircle size={18} className="mr-1" />
-                  Pagati: {paidCount}
-                </Badge>
-                <Badge variant="destructive" className="text-base px-4 py-2">
-                  <XCircle size={18} className="mr-1" />
-                  Non Pagati: {unpaidCount}
-                </Badge>
+            <div className="space-y-4">
+              <div className="p-4 bg-primary/10 rounded-lg border border-primary/20">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-foreground">Quota per Persona</p>
+                    <p className="text-xs text-muted-foreground">Importo fisso stabilito</p>
+                  </div>
+                  <p className="text-2xl font-bold text-primary">
+                    €{(paymentAmount || 0).toFixed(2)}
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex flex-col items-center justify-center p-8 bg-gradient-to-br from-accent/10 to-accent/5 rounded-lg border-2 border-accent/20">
+                <p className="text-muted-foreground text-lg mb-2">Totale Raccolto</p>
+                <p className="text-5xl md:text-6xl font-bold text-accent">
+                  €{totalCollected.toFixed(2)}
+                </p>
+                <p className="text-sm text-muted-foreground mt-2">
+                  ({paidCount} {paidCount === 1 ? "persona" : "persone"} × €{(paymentAmount || 0).toFixed(2)})
+                </p>
+                <div className="flex gap-4 mt-6">
+                  <Badge variant="default" className="text-base px-4 py-2 bg-green-600 hover:bg-green-700">
+                    <CheckCircle size={18} className="mr-1" />
+                    Pagati: {paidCount}
+                  </Badge>
+                  <Badge variant="destructive" className="text-base px-4 py-2">
+                    <XCircle size={18} className="mr-1" />
+                    Non Pagati: {unpaidCount}
+                  </Badge>
+                </div>
               </div>
             </div>
           </CardContent>
@@ -199,10 +181,22 @@ export default function PaymentTracker() {
           </Button>
         </div>
         <CardDescription className="text-base">
-          Traccia chi ha pagato e l'importo per l'evento
+          Traccia chi ha pagato per l'evento
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
+        <div className="p-4 bg-primary/10 rounded-lg border border-primary/20">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-foreground">Quota Fissa</p>
+              <p className="text-xs text-muted-foreground">Configurata nella sezione Data con chiave "payment-amount"</p>
+            </div>
+            <p className="text-2xl font-bold text-primary">
+              €{(paymentAmount || 0).toFixed(2)}
+            </p>
+          </div>
+        </div>
+
         <div className="p-6 bg-gradient-to-br from-accent/10 to-accent/5 rounded-lg border-2 border-accent/20">
           <div className="flex flex-col items-center">
             <p className="text-muted-foreground text-lg mb-2">Totale Raccolto</p>
@@ -276,58 +270,10 @@ export default function PaymentTracker() {
                       </div>
                       
                       <div className="flex items-center gap-2 mt-2">
-                        {editingAmount === payment.person ? (
-                          <>
-                            <div className="flex items-center gap-2 flex-1">
-                              <span className="text-sm font-medium">€</span>
-                              <Input
-                                type="number"
-                                step="0.01"
-                                min="0"
-                                value={tempAmount}
-                                onChange={(e) => setTempAmount(e.target.value)}
-                                onKeyDown={(e) => {
-                                  if (e.key === "Enter") saveAmount(payment.person)
-                                  if (e.key === "Escape") cancelEditing()
-                                }}
-                                className="h-9 text-sm"
-                                autoFocus
-                              />
-                            </div>
-                            <Button
-                              size="sm"
-                              onClick={() => saveAmount(payment.person)}
-                              className="h-9"
-                            >
-                              Salva
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={cancelEditing}
-                              className="h-9"
-                            >
-                              Annulla
-                            </Button>
-                          </>
-                        ) : (
-                          <>
-                            <div className="flex items-center gap-2 flex-1">
-                              <span className="text-sm text-muted-foreground">Importo:</span>
-                              <span className="text-base font-semibold text-accent">
-                                €{(payment.amount || 0).toFixed(2)}
-                              </span>
-                            </div>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => startEditingAmount(payment.person, payment.amount)}
-                              className="h-9"
-                            >
-                              Modifica
-                            </Button>
-                          </>
-                        )}
+                        <span className="text-sm text-muted-foreground">Quota:</span>
+                        <span className="text-base font-semibold text-accent">
+                          €{(paymentAmount || 0).toFixed(2)}
+                        </span>
                       </div>
                       
                       {payment.hasPaid && payment.paidAt && (
