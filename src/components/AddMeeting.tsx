@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { useKV } from "@github/spark/hooks"
+import { useKVNoFallback } from "@/hooks/use-kv-no-fallback"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
@@ -10,7 +10,7 @@ import { Meeting, PARTICIPANTS } from "@/lib/types"
 import { getAvailablePartners, meetingExists, personHasMeetingInRound } from "@/lib/meeting-utils"
 
 export default function AddMeeting() {
-  const [meetings, setMeetings] = useKV<Meeting[]>("meetings", [])
+  const [meetings, setMeetings] = useKVNoFallback<Meeting[]>("meetings", [])
   const [selectedPerson, setSelectedPerson] = useState<string>("")
   const [selectedRound, setSelectedRound] = useState<"1" | "2" | "">("")
   const [selectedPartner, setSelectedPartner] = useState<string>("")

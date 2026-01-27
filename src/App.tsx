@@ -1,15 +1,15 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { CalendarDot } from "@phosphor-icons/react"
-import { useKV } from "@github/spark/hooks"
+import { useKVNoFallback } from "@/hooks/use-kv-no-fallback"
 import AddMeeting from "./components/AddMeeting"
 import SummaryByRound from "./components/SummaryByRound"
 import SummaryByPerson from "./components/SummaryByPerson"
 import PaymentTracker from "./components/PaymentTracker"
 
 function App() {
-  const [eventTitle] = useKV<string>("event-title", "Incontri 1-a-1")
-  const [eventDescription] = useKV<string>("event-description", "Organizza i tuoi incontri in due turni")
-  const [eventDate] = useKV<string>("event-date", "")
+  const [eventTitle] = useKVNoFallback<string>("event-title", "Incontri 1-a-1")
+  const [eventDescription] = useKVNoFallback<string>("event-description", "Organizza i tuoi incontri in due turni")
+  const [eventDate] = useKVNoFallback<string>("event-date", "")
 
   return (
     <div className="min-h-screen bg-background">

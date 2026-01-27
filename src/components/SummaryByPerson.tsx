@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { useKV } from "@github/spark/hooks"
+import { useKVNoFallback } from "@/hooks/use-kv-no-fallback"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
@@ -11,7 +11,7 @@ import { getMeetingsForPerson, getPartnerForMeeting } from "@/lib/meeting-utils"
 import { toast } from "sonner"
 
 export default function SummaryByPerson() {
-  const [meetings, setMeetings] = useKV<Meeting[]>("meetings", [])
+  const [meetings, setMeetings] = useKVNoFallback<Meeting[]>("meetings", [])
   const [selectedPerson, setSelectedPerson] = useState<string>("")
 
   const personMeetings = selectedPerson
