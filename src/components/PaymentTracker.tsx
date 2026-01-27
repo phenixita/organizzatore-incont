@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Checkbox } from "@/components/ui/checkbox"
-import { CurrencyDollar, LockKey, CheckCircle, XCircle } from "@phosphor-icons/react"
+import { CurrencyDollar, LockKey, CheckCircle, XCircle, Wallet } from "@phosphor-icons/react"
 import { toast } from "sonner"
 import { PARTICIPANTS, PaymentStatus } from "@/lib/types"
 
@@ -16,12 +16,15 @@ export default function PaymentTracker() {
   const [password, setPassword] = useState("")
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
+  const [editingAmount, setEditingAmount] = useState<string | null>(null)
+  const [tempAmount, setTempAmount] = useState("")
 
   useEffect(() => {
     if (!payments || payments.length === 0) {
       const initialPayments = PARTICIPANTS.map((person) => ({
         person,
-        hasPaid: false
+        hasPaid: false,
+        amount: 0
       }))
       setPayments(initialPayments)
     }
@@ -65,48 +68,114 @@ export default function PaymentTracker() {
     }
   }
 
+  const handleUpdateAmount = (person: string, amount: number) => {
+    setPayments((current) => {
+      const updated = (current || []).map((p) => {
+        if (p.person === person) {
+          return {
+            ...p,
+            amount
+          }
+        }
+        return p
+      })
+      return updated
+    })
+    toast.success(`Importo aggiornato per ${person}`)
+  }
+
+  const startEditingAmount = (person: string, currentAmount?: number) => {
+    setEditingAmount(person)
+    setTempAmount(currentAmount?.toString() || "0")
+  }
+
+  const saveAmount = (person: string) => {
+    const amount = parseFloat(tempAmount) || 0
+    handleUpdateAmount(person, amount)
+    setEditingAmount(null)
+    setTempAmount("")
+  }
+
+  const cancelEditing = () => {
+    setEditingAmount(null)
+    setTempAmount("")
+  }
+
   const filteredPayments = (payments || []).filter((p) =>
     p.person.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
   const paidCount = (payments || []).filter((p) => p.hasPaid).length
   const unpaidCount = PARTICIPANTS.length - paidCount
+  const totalCollected = (payments || []).reduce((sum, p) => sum + (p.amount || 0), 0)
 
   if (!isAuthenticated) {
     return (
-      <Card className="shadow-lg">
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <LockKey size={24} weight="duotone" className="text-primary" />
-            <CardTitle className="text-xl md:text-2xl">Segretario Tesoriere</CardTitle>
-          </div>
-          <CardDescription className="text-base">
-            Inserisci la password per accedere al pannello pagamenti
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground">
-              Password
-            </label>
-            <Input
-              type="password"
-              placeholder="Inserisci la password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleLogin()}
-              className="h-12 text-base"
-            />
-          </div>
-          <Button 
-            onClick={handleLogin} 
-            className="w-full h-12 text-base"
-          >
-            <LockKey size={20} weight="bold" className="mr-2" />
-            Accedi
-          </Button>
-        </CardContent>
-      </Card>
+      <div className="space-y-6">
+        <Card className="shadow-lg border-2 border-accent">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Wallet size={28} weight="duotone" className="text-accent" />
+              <CardTitle className="text-2xl md:text-3xl">Totale Raccolto</CardTitle>
+            </div>
+            <CardDescription className="text-base">
+              Riepilogo delle somme raccolte per l'evento
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col items-center justify-center p-8 bg-gradient-to-br from-accent/10 to-accent/5 rounded-lg border-2 border-accent/20">
+              <p className="text-muted-foreground text-lg mb-2">Totale</p>
+              <p className="text-5xl md:text-6xl font-bold text-accent">
+                €{totalCollected.toFixed(2)}
+              </p>
+              <div className="flex gap-4 mt-6">
+                <Badge variant="default" className="text-base px-4 py-2 bg-green-600 hover:bg-green-700">
+                  <CheckCircle size={18} className="mr-1" />
+                  Pagati: {paidCount}
+                </Badge>
+                <Badge variant="destructive" className="text-base px-4 py-2">
+                  <XCircle size={18} className="mr-1" />
+                  Non Pagati: {unpaidCount}
+                </Badge>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-lg">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <LockKey size={24} weight="duotone" className="text-primary" />
+              <CardTitle className="text-xl md:text-2xl">Segretario Tesoriere</CardTitle>
+            </div>
+            <CardDescription className="text-base">
+              Inserisci la password per accedere al pannello pagamenti
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">
+                Password
+              </label>
+              <Input
+                type="password"
+                placeholder="Inserisci la password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleLogin()}
+                className="h-12 text-base"
+              />
+            </div>
+            <Button 
+              onClick={handleLogin} 
+              className="w-full h-12 text-base"
+            >
+              <LockKey size={20} weight="bold" className="mr-2" />
+              Accedi
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
     )
   }
 
@@ -130,10 +199,19 @@ export default function PaymentTracker() {
           </Button>
         </div>
         <CardDescription className="text-base">
-          Traccia chi ha pagato per l'evento
+          Traccia chi ha pagato e l'importo per l'evento
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
+        <div className="p-6 bg-gradient-to-br from-accent/10 to-accent/5 rounded-lg border-2 border-accent/20">
+          <div className="flex flex-col items-center">
+            <p className="text-muted-foreground text-lg mb-2">Totale Raccolto</p>
+            <p className="text-5xl md:text-6xl font-bold text-accent">
+              €{totalCollected.toFixed(2)}
+            </p>
+          </div>
+        </div>
+
         <div className="flex gap-4 flex-wrap">
           <Badge variant="default" className="text-base px-4 py-2 bg-green-600 hover:bg-green-700">
             <CheckCircle size={18} className="mr-1" />
@@ -169,21 +247,21 @@ export default function PaymentTracker() {
                 }`}
               >
                 <CardContent className="p-4">
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-start gap-4">
                     <Checkbox
                       id={payment.person}
                       checked={payment.hasPaid}
                       onCheckedChange={() => handleTogglePayment(payment.person)}
-                      className="h-6 w-6"
+                      className="h-6 w-6 mt-1"
                     />
-                    <label
-                      htmlFor={payment.person}
-                      className="flex-1 cursor-pointer"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="font-medium text-base md:text-lg">
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between mb-2">
+                        <label
+                          htmlFor={payment.person}
+                          className="font-medium text-base md:text-lg cursor-pointer"
+                        >
                           {payment.person}
-                        </span>
+                        </label>
                         {payment.hasPaid ? (
                           <Badge className="bg-green-600 hover:bg-green-700">
                             <CheckCircle size={16} className="mr-1" />
@@ -196,12 +274,68 @@ export default function PaymentTracker() {
                           </Badge>
                         )}
                       </div>
+                      
+                      <div className="flex items-center gap-2 mt-2">
+                        {editingAmount === payment.person ? (
+                          <>
+                            <div className="flex items-center gap-2 flex-1">
+                              <span className="text-sm font-medium">€</span>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                value={tempAmount}
+                                onChange={(e) => setTempAmount(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") saveAmount(payment.person)
+                                  if (e.key === "Escape") cancelEditing()
+                                }}
+                                className="h-9 text-sm"
+                                autoFocus
+                              />
+                            </div>
+                            <Button
+                              size="sm"
+                              onClick={() => saveAmount(payment.person)}
+                              className="h-9"
+                            >
+                              Salva
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={cancelEditing}
+                              className="h-9"
+                            >
+                              Annulla
+                            </Button>
+                          </>
+                        ) : (
+                          <>
+                            <div className="flex items-center gap-2 flex-1">
+                              <span className="text-sm text-muted-foreground">Importo:</span>
+                              <span className="text-base font-semibold text-accent">
+                                €{(payment.amount || 0).toFixed(2)}
+                              </span>
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => startEditingAmount(payment.person, payment.amount)}
+                              className="h-9"
+                            >
+                              Modifica
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                      
                       {payment.hasPaid && payment.paidAt && (
-                        <p className="text-sm text-muted-foreground mt-1">
+                        <p className="text-sm text-muted-foreground mt-2">
                           Pagato il: {new Date(payment.paidAt).toLocaleDateString("it-IT")}
                         </p>
                       )}
-                    </label>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
