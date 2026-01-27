@@ -18,7 +18,7 @@ jobs:
     if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
     runs-on: ubuntu-latest
     name: Deploy Infrastructure (Bicep)
-    environment: ${{ github.event_name == 'push' && 'production' || null }}
+    environment: ${{ github.event_name == 'push' && 'production' || '' }}
     permissions:
       contents: read
       id-token: write
@@ -57,7 +57,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Build and Deploy Job
     needs: deploy_infrastructure
-    environment: ${{ github.event_name == 'push' && 'production' || null }}
+    environment: ${{ github.event_name == 'push' && 'production' || '' }}
     permissions:
       contents: read
       pull-requests: write
