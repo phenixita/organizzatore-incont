@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { useKV } from "@github/spark/hooks"
+import { useAzureStorage } from "@/hooks/useAzureStorage"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -11,9 +11,9 @@ import { toast } from "sonner"
 import { PARTICIPANTS, PaymentStatus } from "@/lib/types"
 
 export default function PaymentTracker() {
-  const [treasurerPassword] = useKV<string>("treasurer-password", "")
-  const [paymentAmount] = useKV<number>("payment-amount", 0)
-  const [payments, setPayments] = useKV<PaymentStatus[]>("payments", [])
+  const [treasurerPassword] = useAzureStorage<string>("treasurer-password", "")
+  const [paymentAmount] = useAzureStorage<number>("payment-amount", 0)
+  const [payments, setPayments] = useAzureStorage<PaymentStatus[]>("payments", [])
   const [password, setPassword] = useState("")
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
@@ -26,6 +26,7 @@ export default function PaymentTracker() {
       }))
       setPayments(initialPayments)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const handleLogin = () => {

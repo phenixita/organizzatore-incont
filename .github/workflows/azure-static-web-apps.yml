@@ -1,0 +1,97 @@
+name: Azure Static Web Apps CI/CD
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+    branches:
+      - main
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  deploy_infrastructure:
+    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
+    runs-on: ubuntu-latest
+    name: Deploy Infrastructure (Bicep)
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      PROJECT_NAME: bni-aperionetoone
+      ENVIRONMENT: prod
+      LOCATION: westeurope
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Deploy Bicep
+        shell: bash
+        run: |
+          RESOURCE_GROUP="${PROJECT_NAME}-${ENVIRONMENT}-rg"
+          az group create \
+            --name "$RESOURCE_GROUP" \
+            --location "$LOCATION" \
+            --tags "Project=Organizzatore Incontri" "Environment=$ENVIRONMENT" "ManagedBy=Bicep"
+
+          az deployment group create \
+            --resource-group "$RESOURCE_GROUP" \
+            --template-file infrastructure/main.bicep \
+            --parameters projectName="$PROJECT_NAME" environment="$ENVIRONMENT" location="$LOCATION"
+
+  build_and_deploy_job:
+    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
+    runs-on: ubuntu-latest
+    name: Build and Deploy Job
+    needs: deploy_infrastructure
+    permissions:
+      contents: read
+      pull-requests: write
+    env:
+      NODE_VERSION: '20.19.6' 
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Build And Deploy
+        id: builddeploy
+        uses: Azure/static-web-apps-deploy@v1
+        env:
+          VITE_AZURE_STORAGE_ACCOUNT: ${{ vars.AZURE_STORAGE_ACCOUNT }}
+          VITE_AZURE_STORAGE_CONTAINER: ${{ vars.AZURE_STORAGE_CONTAINER }}
+          VITE_AZURE_STORAGE_SAS: ${{ secrets.AZURE_STORAGE_SAS }}
+          VITE_BUILD_COMMIT: ${{ github.sha }}
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          action: "upload"
+          app_location: "/" # App source code path
+          api_location: "" # Api source code path - optional
+          output_location: "dist" # Built app content directory
+          
+  close_pull_request_job:
+    if: github.event_name == 'pull_request' && github.event.action == 'closed'
+    runs-on: ubuntu-latest
+    name: Close Pull Request Job
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Close Pull Request
+        id: closepullrequest
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          action: "close"

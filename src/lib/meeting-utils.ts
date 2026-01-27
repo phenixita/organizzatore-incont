@@ -1,4 +1,4 @@
-import { Meeting, Participant } from "./types"
+import { Meeting } from "./types"
 
 export function personHasMeetingInRound(
   person: string,
