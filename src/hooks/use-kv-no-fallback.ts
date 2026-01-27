@@ -63,10 +63,15 @@ class NoFallbackKVClient {
     }
   }
   
-  async getOrSetKey<T>(key: string, initialValue: T): Promise<T> {
+  async getOrSetKey<T>(key: string, initialValue: T | undefined): Promise<T | undefined> {
     const existingValue = await this.getKey<T>(key)
     if (existingValue !== undefined) {
       return existingValue
+    }
+    
+    // If no initial value provided and key doesn't exist, return undefined
+    if (initialValue === undefined) {
+      return undefined
     }
     
     try {
@@ -78,6 +83,11 @@ class NoFallbackKVClient {
         },
         body: JSON.stringify(initialValue),
       })
+      
+      // If 409 Conflict, another request already set the value, fetch it
+      if (response.status === 409) {
+        return await this.getKey<T>(key) || initialValue
+      }
       
       if (!response.ok) {
         throw new Error(`Failed to set default value: ${response.statusText}`)
@@ -115,7 +125,7 @@ export function useKVNoFallback<T = string>(
     
     async function getOrSetKey() {
       try {
-        const fetchedValue = await kvClient.getOrSetKey(key, initialValue as T)
+        const fetchedValue = await kvClient.getOrSetKey(key, initialValue)
         if (mounted) {
           setValue(fetchedValue)
         }
@@ -150,8 +160,10 @@ export function useKVNoFallback<T = string>(
         kvClient.setKey(key, nextValue).catch((error) => {
           console.error(
             `CRITICAL: Failed to save data to Spark KV backend. ` +
-            `The change will be lost on page reload. Error:`, error
+            `The change will be lost on page reload. Reverting to previous value. Error:`, error
           )
+          // Revert to the previous value since backend save failed
+          setValue(currentValue)
         })
         
         return nextValue
