@@ -5,11 +5,23 @@
   },
   "routes": [
     {
-      "route": "/*",
+      "route": "/.auth/**",
       "allowedRoles": ["anonymous"]
+    },
+    {
+      "route": "/login",
+      "allowedRoles": ["anonymous"]
+    },
+    {
+      "route": "/*",
+      "allowedRoles": ["authenticated"]
     }
   ],
   "responseOverrides": {
+    "401": {
+      "redirect": "/.auth/login/google",
+      "statusCode": 302
+    },
     "404": {
       "rewrite": "/index.html"
     }

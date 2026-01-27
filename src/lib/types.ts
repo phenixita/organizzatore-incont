@@ -12,6 +12,23 @@ export interface PaymentStatus {
   paidAt?: string
 }
 
+export interface EventAttendee {
+  userId: string
+  userDetails: string
+  displayName: string
+  joinedAt: string
+}
+
+export interface AuthenticatedMeeting {
+  id: string
+  userId1: string
+  userId2: string
+  displayName1: string
+  displayName2: string
+  round: 1 | 2
+  createdAt: string
+}
+
 export const PARTICIPANTS = [
   "ALESSANDRA VERONESE",
   "ALESSIO FASSANELLI",
@@ -48,3 +65,4 @@ export const PARTICIPANTS = [
 ] as const
 
 export type Participant = typeof PARTICIPANTS[number]
+
