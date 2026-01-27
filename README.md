@@ -70,8 +70,13 @@ Nel portale Azure:
 - Seleziona "Configuration" nel menu laterale
 - Aggiungi le seguenti variabili in "Application settings":
   - `VITE_AZURE_STORAGE_ACCOUNT`: nome dello storage account
-  - `VITE_AZURE_STORAGE_CONTAINER`: `app-data`
   - `VITE_AZURE_STORAGE_SAS`: il SAS token generato (include il `?` all'inizio)
+
+**Nota**: L'applicazione usa due container:
+  - `app-data`: per le configurazioni generali dell'evento
+  - `event-attendance`: per i dati di partecipazione e incontri autenticati
+
+Assicurati che entrambi i container esistano nel tuo storage account e che il SAS token abbia permessi su entrambi.
 
 5. **Push al repository:**
 
@@ -176,32 +181,42 @@ organizzatore-incont/
 
 ## 🔧 Funzionalità
 
-- ✅ Programmazione incontri 1-a-1 per 32 partecipanti
+- ✅ **Autenticazione obbligatoria** tramite Azure Static Web Apps (Google OAuth)
+- ✅ **Sistema di partecipazione agli eventi** - gli utenti devono iscriversi all'evento
+- ✅ Programmazione incontri 1-a-1 tra partecipanti autenticati
 - ✅ Gestione di due turni separati
 - ✅ Riepilogo per turno e per persona
-- ✅ Sistema di gestione pagamenti con autenticazione
-- ✅ Persistenza dati su Azure Blob Storage
-- ✅ Fallback automatico a localStorage per sviluppo locale
+- ✅ Funzionalità "Rimuovi dalla lista" che cancella tutti gli incontri dell'utente
+- ✅ Persistenza dati su Azure Blob Storage (container dedicato `event-attendance`)
 - ✅ Interfaccia responsive per mobile e desktop
+
+Per maggiori dettagli sull'autenticazione e il nuovo sistema, vedi [AUTHENTICATION.md](./AUTHENTICATION.md).
 
 ## 🔐 Sicurezza
 
+- **Autenticazione obbligatoria** via Azure Static Web Apps
 - Tutti i dati sono trasmessi via HTTPS
 - L'accesso allo storage è controllato tramite SAS token con scadenza
 - Il SAS token non è mai esposto nel codice frontend
 - CORS configurato per limitare l'accesso al solo dominio dell'applicazione
+- Identificazione utente tramite Azure user ID (nessuna lista fissa di partecipanti)
 
 ## 📝 Configurazione dei Dati
 
-L'applicazione supporta la configurazione tramite chiavi salvate nello storage:
+L'applicazione utilizza due container di storage Azure:
 
+### Container `event-attendance` (Sistema Autenticato - Nuovo)
+- `attendees`: Lista degli utenti che hanno aderito all'evento
+- `meetings`: Array degli incontri programmati tra partecipanti autenticati
+
+### Container `app-data` (Sistema Legacy)
 - `event-title`: Titolo dell'evento
 - `event-description`: Descrizione dell'evento
 - `event-date`: Data dell'evento
 - `treasurer-password`: Password per l'accesso alla gestione pagamenti
 - `payment-amount`: Importo del pagamento per persona
-- `meetings`: Array degli incontri programmati
-- `payments`: Array degli stati di pagamento
+- `meetings`: Array degli incontri programmati (sistema legacy)
+- `payments`: Array degli stati di pagamento (sistema legacy)
 
 ## 🤝 Contribuire
 
