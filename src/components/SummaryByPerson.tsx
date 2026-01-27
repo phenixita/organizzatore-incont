@@ -1,0 +1,116 @@
+import { useState } from "react"
+import { useKV } from "@github/spark/hooks"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Badge } from "@/components/ui/badge"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { UserCircle, UsersThree } from "@phosphor-icons/react"
+import { Meeting, PARTICIPANTS } from "@/lib/types"
+import { getMeetingsForPerson, getPartnerForMeeting } from "@/lib/meeting-utils"
+
+export default function SummaryByPerson() {
+  const [meetings] = useKV<Meeting[]>("meetings", [])
+  const [selectedPerson, setSelectedPerson] = useState<string>("")
+
+  const personMeetings = selectedPerson
+    ? getMeetingsForPerson(meetings || [], selectedPerson)
+    : []
+
+  const round1Meetings = personMeetings.filter((m) => m.round === 1)
+  const round2Meetings = personMeetings.filter((m) => m.round === 2)
+
+  return (
+    <Card className="shadow-lg">
+      <CardHeader>
+        <div className="flex items-center gap-2">
+          <UserCircle size={24} weight="duotone" className="text-primary" />
+          <CardTitle className="text-xl md:text-2xl">Riepilogo per Persona</CardTitle>
+        </div>
+        <CardDescription className="text-base">
+          Filtra gli incontri per vedere chi si incontra con chi
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-foreground">
+            Seleziona una persona
+          </label>
+          <Select value={selectedPerson} onValueChange={setSelectedPerson}>
+            <SelectTrigger className="h-12 text-base">
+              <SelectValue placeholder="Scegli una persona" />
+            </SelectTrigger>
+            <SelectContent>
+              {PARTICIPANTS.map((person) => (
+                <SelectItem key={person} value={person} className="text-base">
+                  {person}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {selectedPerson && (
+          <div className="space-y-4 mt-6">
+            <h3 className="text-lg font-semibold text-foreground">
+              Incontri di {selectedPerson}
+            </h3>
+
+            {personMeetings.length === 0 ? (
+              <p className="text-muted-foreground text-center py-8">
+                Nessun incontro programmato
+              </p>
+            ) : (
+              <ScrollArea className="h-[400px] pr-4">
+                <div className="space-y-4">
+                  {round1Meetings.length > 0 && (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="default" className="text-sm px-2 py-1">
+                          Turno 1
+                        </Badge>
+                      </div>
+                      {round1Meetings.map((meeting) => (
+                        <Card key={meeting.id} className="bg-card hover:bg-muted/50 transition-colors">
+                          <CardContent className="p-4">
+                            <div className="flex items-center gap-3">
+                              <UsersThree size={24} weight="duotone" className="text-primary flex-shrink-0" />
+                              <p className="font-medium text-base md:text-lg">
+                                {getPartnerForMeeting(meeting, selectedPerson)}
+                              </p>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+
+                  {round2Meetings.length > 0 && (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary" className="text-sm px-2 py-1">
+                          Turno 2
+                        </Badge>
+                      </div>
+                      {round2Meetings.map((meeting) => (
+                        <Card key={meeting.id} className="bg-card hover:bg-muted/50 transition-colors">
+                          <CardContent className="p-4">
+                            <div className="flex items-center gap-3">
+                              <UsersThree size={24} weight="duotone" className="text-primary flex-shrink-0" />
+                              <p className="font-medium text-base md:text-lg">
+                                {getPartnerForMeeting(meeting, selectedPerson)}
+                              </p>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </ScrollArea>
+            )}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
