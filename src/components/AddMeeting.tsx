@@ -1,13 +1,18 @@
-import { useState } from "react"
-import { useAzureStorage } from "@/hooks/useAzureStorage"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Plus, Users } from "@phosphor-icons/react"
-import { toast } from "sonner"
+import { useAzureStorage } from "@/hooks/useAzureStorage"
+import {
+    getAvailablePartners,
+    meetingExists,
+    meetingPairExistsAnyRound,
+    personHasMeetingInRound
+} from "@/lib/meeting-utils"
 import { Meeting, PARTICIPANTS } from "@/lib/types"
-import { getAvailablePartners, meetingExists, personHasMeetingInRound } from "@/lib/meeting-utils"
+import { Plus, Users } from "@phosphor-icons/react"
+import { useState } from "react"
+import { toast } from "sonner"
 
 export default function AddMeeting() {
   const [meetings, setMeetings] = useAzureStorage<Meeting[]>("meetings", [])
@@ -38,6 +43,11 @@ export default function AddMeeting() {
 
     if (meetingExists(meetings || [], selectedPerson, selectedPartner, round)) {
       toast.error("Questo incontro è già stato programmato")
+      return
+    }
+
+    if (meetingPairExistsAnyRound(meetings || [], selectedPerson, selectedPartner)) {
+      toast.error("Queste due persone si sono già incontrate in un altro turno")
       return
     }
 
