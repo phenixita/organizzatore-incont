@@ -2,7 +2,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useAzureStorage } from "@/hooks/useAzureStorage"
 import { CalendarDot } from "@phosphor-icons/react"
 import AddMeeting from "./components/AddMeeting"
-import PaymentTracker from "./components/PaymentTracker"
+import ParticipantsList from "./components/ParticipantsList"
 import SummaryByPerson from "./components/SummaryByPerson"
 import SummaryByRound from "./components/SummaryByRound"
 
@@ -44,8 +44,8 @@ function App() {
             <TabsTrigger value="by-person" className="text-xs md:text-base">
               Per Persona
             </TabsTrigger>
-            <TabsTrigger value="payments" className="text-xs md:text-base">
-              Pagamenti
+            <TabsTrigger value="participants" className="text-xs md:text-base">
+              Partecipanti
             </TabsTrigger>
           </TabsList>
 
@@ -61,8 +61,8 @@ function App() {
             <SummaryByPerson />
           </TabsContent>
 
-          <TabsContent value="payments" className="mt-0">
-            <PaymentTracker />
+          <TabsContent value="participants" className="mt-0">
+            <ParticipantsList />
           </TabsContent>
         </Tabs>
       </div>
