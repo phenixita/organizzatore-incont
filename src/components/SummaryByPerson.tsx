@@ -1,17 +1,17 @@
 import { useState } from "react"
-import { useAzureStorage } from "@/hooks/useAzureStorage"
+import { useAzureStorageWithRefresh } from "@/hooks/useAzureStorage"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Button } from "@/components/ui/button"
-import { UserCircle, UsersThree, Trash } from "@phosphor-icons/react"
+import { ArrowsClockwise, UserCircle, UsersThree, Trash } from "@phosphor-icons/react"
 import { Meeting } from "@/lib/types"
 import { getMeetingsForPerson, getPartnerForMeeting } from "@/lib/meeting-utils"
 import { toast } from "sonner"
 
 export default function SummaryByPerson() {
-  const [meetings, setMeetings] = useAzureStorage<Meeting[]>("meetings", [])
+  const [meetings, setMeetings, hasExternalUpdate] = useAzureStorageWithRefresh<Meeting[]>("meetings", [], 30000)
   const [selectedPerson, setSelectedPerson] = useState<string>("")
 
   // Get unique participants who have at least one meeting
@@ -40,6 +40,12 @@ export default function SummaryByPerson() {
         <div className="flex items-center gap-2">
           <UserCircle size={24} weight="duotone" className="text-primary" />
           <CardTitle className="text-xl md:text-2xl">Riepilogo per Persona</CardTitle>
+          {hasExternalUpdate && (
+            <Badge variant="outline" className="ml-auto flex items-center gap-1 animate-pulse">
+              <ArrowsClockwise size={14} weight="bold" />
+              Dati aggiornati
+            </Badge>
+          )}
         </div>
         <CardDescription className="text-base">
           Filtra gli incontri per vedere chi si incontra con chi

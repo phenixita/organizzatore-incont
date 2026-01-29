@@ -2,7 +2,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { useAzureStorage } from "@/hooks/useAzureStorage"
+import { useAzureStorageWithRefresh } from "@/hooks/useAzureStorage"
 import {
     getAvailablePartners,
     meetingExists,
@@ -10,12 +10,12 @@ import {
     personHasMeetingInRound
 } from "@/lib/meeting-utils"
 import { Meeting, PARTICIPANTS } from "@/lib/types"
-import { Plus, Users } from "@phosphor-icons/react"
+import { ArrowsClockwise, Plus, Users } from "@phosphor-icons/react"
 import { useState } from "react"
 import { toast } from "sonner"
 
 export default function AddMeeting() {
-  const [meetings, setMeetings] = useAzureStorage<Meeting[]>("meetings", [])
+  const [meetings, setMeetings, hasExternalUpdate] = useAzureStorageWithRefresh<Meeting[]>("meetings", [], 30000)
   const [selectedPerson, setSelectedPerson] = useState<string>("")
   const [selectedRound, setSelectedRound] = useState<"1" | "2" | "">("")
   const [selectedPartner, setSelectedPartner] = useState<string>("")
@@ -74,6 +74,12 @@ export default function AddMeeting() {
         <div className="flex items-center gap-2">
           <Users size={24} weight="duotone" className="text-primary" />
           <CardTitle className="text-xl md:text-2xl">Programma un nuovo incontro</CardTitle>
+          {hasExternalUpdate && (
+            <Badge variant="outline" className="ml-auto flex items-center gap-1 animate-pulse">
+              <ArrowsClockwise size={14} weight="bold" />
+              Dati aggiornati
+            </Badge>
+          )}
         </div>
         <CardDescription className="text-base">
           Seleziona chi sei, il turno e con chi vuoi incontrarti

@@ -1,16 +1,16 @@
-import { useAzureStorage } from "@/hooks/useAzureStorage"
+import { useAzureStorageWithRefresh } from "@/hooks/useAzureStorage"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Button } from "@/components/ui/button"
-import { ListChecks, UsersThree, Trash } from "@phosphor-icons/react"
+import { ArrowsClockwise, ListChecks, UsersThree, Trash } from "@phosphor-icons/react"
 import { Meeting } from "@/lib/types"
 import { getMeetingsByRound } from "@/lib/meeting-utils"
 import { toast } from "sonner"
 
 export default function SummaryByRound() {
-  const [meetings, setMeetings] = useAzureStorage<Meeting[]>("meetings", [])
+  const [meetings, setMeetings, hasExternalUpdate] = useAzureStorageWithRefresh<Meeting[]>("meetings", [], 30000)
 
   const round1Meetings = getMeetingsByRound(meetings || [], 1)
   const round2Meetings = getMeetingsByRound(meetings || [], 2)
@@ -78,6 +78,12 @@ export default function SummaryByRound() {
         <div className="flex items-center gap-2">
           <ListChecks size={24} weight="duotone" className="text-primary" />
           <CardTitle className="text-xl md:text-2xl">Riepilogo per Turno</CardTitle>
+          {hasExternalUpdate && (
+            <Badge variant="outline" className="ml-auto flex items-center gap-1 animate-pulse">
+              <ArrowsClockwise size={14} weight="bold" />
+              Dati aggiornati
+            </Badge>
+          )}
         </div>
         <CardDescription className="text-base">
           Visualizza tutti gli incontri organizzati per turno

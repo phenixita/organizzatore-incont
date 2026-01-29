@@ -59,8 +59,10 @@ output staticWebAppUrl string = staticWebApp.outputs.staticWebAppUrl
 output staticWebAppName string = staticWebApp.outputs.staticWebAppName
 output storageAccountName string = storage.outputs.storageAccountName
 output storageContainerName string = storage.outputs.containerName
+output storageTableName string = storage.outputs.tableName
 output storageAccountId string = storage.outputs.storageAccountId
 output storageContainerSas string = storage.outputs.containerSas
+output storageTableSas string = storage.outputs.tableSas
 
 // Instructions for post-deployment configuration
 output deploymentInstructions string = '''
@@ -75,5 +77,12 @@ Next steps:
   - VITE_AZURE_STORAGE_CONTAINER=${containerName}
   - VITE_AZURE_STORAGE_SAS=?${storage.outputs.containerSas}
 
+3. Optional - Table Storage (for future concurrent access patterns):
+  - Table Name: ${storage.outputs.tableName}
+  - Table SAS: ?${storage.outputs.tableSas}
+
 Your Static Web App URL: https://${staticWebAppName}.azurestaticapps.net
+
+Note: The storage now includes ETag support for optimistic concurrency control.
+Blob CORS has been configured to expose ETag headers for concurrent access.
 '''
