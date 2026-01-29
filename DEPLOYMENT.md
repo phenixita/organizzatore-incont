@@ -6,8 +6,20 @@ Questa guida fornisce istruzioni dettagliate per il deployment dell'applicazione
 
 L'applicazione utilizza:
 - **Azure Static Web Apps**: Hosting dell'applicazione React
-- **Azure Blob Storage**: Persistenza dei dati (key-value store)
+- **Azure Blob Storage**: Persistenza dei dati (key-value store) con supporto per ETags
+- **Azure Table Storage**: Infrastruttura preparata per accesso concorrente avanzato (uso futuro)
 - **GitHub Actions**: CI/CD automatico
+
+### Gestione della Concorrenza
+
+L'applicazione è progettata per supportare **accesso simultaneo da parte di più utenti**:
+
+- **Optimistic Concurrency Control**: Utilizza ETags di Azure Storage per rilevare conflitti
+- **Retry Automatico**: Gestisce automaticamente i conflitti con exponential backoff (fino a 3 tentativi)
+- **Refresh Periodico**: Aggiorna i dati ogni 30 secondi per mostrare modifiche di altri utenti
+- **CORS Configurato**: Espone gli header ETag necessari per il controllo di concorrenza
+
+Per dettagli tecnici completi, consulta [CONCURRENCY.md](../CONCURRENCY.md).
 
 ## Prerequisiti
 
@@ -77,9 +89,10 @@ cd infrastructure
 **Cosa fa lo script:**
 1. Crea un Resource Group in Azure
 2. Deploya l'Azure Static Web App
-3. Deploya l'Azure Storage Account con un container blob
-4. Configura CORS per consentire l'accesso da browser
-5. Fornisce istruzioni per la configurazione finale
+3. Deploya l'Azure Storage Account con container blob e tabella
+4. Configura CORS per consentire l'accesso da browser ed esporre ETags
+5. Genera SAS token per blob e table storage
+6. Fornisce istruzioni per la configurazione finale
 
 ### Step 3: Salva gli Output del Deployment
 
@@ -248,23 +261,46 @@ npm run build -- --mode production
 
 ### Problema: CORS Errors
 
-**Sintomi:** Errori CORS nella console del browser
+**Sintomi:** Errori CORS nella console del browser o ETags non accessibili
 
 **Soluzione:**
-Il template Bicep configura già CORS. Se il problema persiste:
+Il template Bicep configura già CORS con supporto per ETags. Se il problema persiste:
 
 ```bash
+# Verifica CORS su Blob Storage
+az storage cors list \
+  --services b \
+  --account-name <storage-account-name>
+
+# Aggiungi/aggiorna CORS con ETag support
 az storage cors add \
   --services b \
   --methods GET PUT POST DELETE HEAD OPTIONS \
   --origins "*" \
   --allowed-headers "*" \
-  --exposed-headers "*" \
+  --exposed-headers "etag,x-ms-*,ETag,*" \
   --max-age 3600 \
   --account-name <storage-account-name>
 ```
 
-Per produzione, limita `--origins` al dominio della tua app.
+**Nota:** Per produzione, limita `--origins` al dominio della tua app e assicurati che gli ETags siano esposti tramite `exposed-headers`.
+
+### Problema: Conflitti di Scrittura Concorrente
+
+**Sintomi:** Errori "Failed to save after 3 attempts" nella console
+
+**Cause possibili:**
+1. Alta concorrenza (molti utenti modificano simultaneamente)
+2. Problemi di rete intermittenti
+3. ETags non configurati correttamente
+
+**Soluzioni:**
+1. Verifica che CORS esponga gli header ETag (vedi sopra)
+2. Controlla la console browser per errori 412 (Precondition Failed)
+3. Riduci l'intervallo di refresh se necessario (in `useAzureStorageWithRefresh`)
+4. Per alta concorrenza, considera la migrazione ad Azure Table Storage
+
+Per maggiori dettagli sulla gestione della concorrenza, consulta [CONCURRENCY.md](../CONCURRENCY.md).
 
 ### Problema: GitHub Actions non Triggera
 
@@ -339,7 +375,8 @@ Prima di considerare il deployment completato:
 
 - [ ] Resource Group creato in Azure
 - [ ] Static Web App deployata e raggiungibile
-- [ ] Storage Account creato con container `app-data`
+- [ ] Storage Account creato con container `app-data` e tabella `meetings`
+- [ ] CORS configurato per esporre ETags
 - [ ] SAS Token generato e configurato
 - [ ] GitHub Secret `AZURE_STATIC_WEB_APPS_API_TOKEN` configurato
 - [ ] Environment variables configurate nella Static Web App
@@ -347,6 +384,8 @@ Prima di considerare il deployment completato:
 - [ ] Applicazione accessibile via URL pubblico
 - [ ] Test funzionalità: aggiungere/visualizzare incontri
 - [ ] Test persistenza dati dopo refresh
+- [ ] Test accesso concorrente (aprire 2+ tab e modificare simultaneamente)
+- [ ] Verifica notifiche di aggiornamento dati esterni
 - [ ] Test gestione pagamenti (con password)
 - [ ] Backup della configurazione salvato
 

@@ -181,8 +181,22 @@ organizzatore-incont/
 - ✅ Riepilogo per turno e per persona
 - ✅ Sistema di gestione pagamenti con autenticazione
 - ✅ Persistenza dati su Azure Blob Storage
+- ✅ **Controllo di concorrenza ottimistico con ETags**
+- ✅ **Aggiornamento automatico dei dati da altri utenti**
+- ✅ **Gestione automatica dei conflitti con retry**
 - ✅ Fallback automatico a localStorage per sviluppo locale
 - ✅ Interfaccia responsive per mobile e desktop
+
+### Accesso Concorrente
+
+L'applicazione supporta **l'accesso simultaneo da parte di più utenti** grazie a:
+
+- **Optimistic Concurrency Control**: Usa gli ETags di Azure Storage per rilevare e gestire i conflitti
+- **Retry Automatico**: In caso di conflitto (es. due utenti aggiungono un incontro nello stesso momento), il sistema riprova automaticamente fino a 3 volte
+- **Refresh Periodico**: I dati vengono aggiornati automaticamente ogni 30 secondi per mostrare le modifiche degli altri utenti
+- **Notifiche Visive**: Un badge animato mostra quando i dati sono stati aggiornati da altri utenti
+
+Per maggiori dettagli tecnici, consulta [CONCURRENCY.md](./CONCURRENCY.md).
 
 ## 🔐 Sicurezza
 
@@ -190,6 +204,8 @@ organizzatore-incont/
 - L'accesso allo storage è controllato tramite SAS token con scadenza
 - Il SAS token non è mai esposto nel codice frontend
 - CORS configurato per limitare l'accesso al solo dominio dell'applicazione
+- **ETags esposti via CORS per il controllo di concorrenza**
+- **Validazione delle modifiche lato server tramite If-Match headers**
 
 ## 📝 Configurazione dei Dati
 
