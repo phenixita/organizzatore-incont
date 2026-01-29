@@ -9,6 +9,53 @@ export interface ExportPDFOptions {
   meetings: Meeting[]
 }
 
+// Page layout constants
+const PAGE_BREAK_THRESHOLD_MEETING = 270
+const PAGE_BREAK_THRESHOLD_SECTION = 250
+const FOOTER_Y_POSITION = 287
+const MAX_TEXT_WIDTH = 170
+
+/**
+ * Sanitize filename by removing invalid characters
+ */
+function sanitizeFilename(filename: string): string {
+  // Remove or replace invalid filename characters
+  return filename
+    .replace(/[/\\:*?"<>|]/g, "_")
+    .replace(/\s+/g, "_")
+    .substring(0, 200) // Limit length
+}
+
+/**
+ * Render meetings for a specific round
+ */
+function renderRoundMeetings(
+  doc: jsPDF,
+  meetings: Meeting[],
+  startYPosition: number
+): number {
+  let yPosition = startYPosition
+  
+  meetings.forEach((meeting, index) => {
+    // Check if we need a new page
+    if (yPosition > PAGE_BREAK_THRESHOLD_MEETING) {
+      doc.addPage()
+      yPosition = 20
+    }
+
+    // Use splitTextToSize to handle long names
+    const meetingText = `${index + 1}. ${meeting.person1} con ${meeting.person2}`
+    const lines = doc.splitTextToSize(meetingText, MAX_TEXT_WIDTH)
+    
+    lines.forEach((line: string) => {
+      doc.text(line, 20, yPosition)
+      yPosition += 6
+    })
+  })
+  
+  return yPosition
+}
+
 export function exportToPDF(options: ExportPDFOptions): void {
   const { eventTitle, eventDescription, eventDate, meetings } = options
   
@@ -25,24 +72,35 @@ export function exportToPDF(options: ExportPDFOptions): void {
   // Title
   doc.setFontSize(22)
   doc.setFont("helvetica", "bold")
-  doc.text(eventTitle, 105, 20, { align: "center" })
+  const titleLines = doc.splitTextToSize(eventTitle, MAX_TEXT_WIDTH)
+  titleLines.forEach((line: string, idx: number) => {
+    doc.text(line, 105, 20 + (idx * 8), { align: "center" })
+  })
+  const titleHeight = titleLines.length * 8
 
   // Description
   doc.setFontSize(12)
   doc.setFont("helvetica", "normal")
-  doc.text(eventDescription, 105, 30, { align: "center" })
+  const descLines = doc.splitTextToSize(eventDescription, MAX_TEXT_WIDTH)
+  descLines.forEach((line: string, idx: number) => {
+    doc.text(line, 105, 20 + titleHeight + (idx * 6), { align: "center" })
+  })
+  const descHeight = descLines.length * 6
 
   // Date
+  let dateHeight = 0
   if (eventDate) {
     doc.setFontSize(11)
-    doc.text(`Data: ${eventDate}`, 105, 38, { align: "center" })
+    doc.text(`Data: ${eventDate}`, 105, 20 + titleHeight + descHeight + 2, { align: "center" })
+    dateHeight = 8
   }
 
   // Line separator
+  const separatorY = 20 + titleHeight + descHeight + dateHeight + 5
   doc.setLineWidth(0.5)
-  doc.line(20, 45, 190, 45)
+  doc.line(20, separatorY, 190, separatorY)
 
-  let yPosition = 55
+  let yPosition = separatorY + 10
 
   // Round 1
   const round1Meetings = getMeetingsByRound(meetings, 1)
@@ -62,22 +120,13 @@ export function exportToPDF(options: ExportPDFOptions): void {
     yPosition += 10
   } else {
     doc.setFont("helvetica", "normal")
-    round1Meetings.forEach((meeting, index) => {
-      // Check if we need a new page
-      if (yPosition > 270) {
-        doc.addPage()
-        yPosition = 20
-      }
-
-      doc.text(`${index + 1}. ${meeting.person1} con ${meeting.person2}`, 20, yPosition)
-      yPosition += 6
-    })
+    yPosition = renderRoundMeetings(doc, round1Meetings, yPosition)
     yPosition += 5
   }
 
   // Round 2
   // Check if we need a new page before Round 2
-  if (yPosition > 250) {
+  if (yPosition > PAGE_BREAK_THRESHOLD_SECTION) {
     doc.addPage()
     yPosition = 20
   }
@@ -98,16 +147,7 @@ export function exportToPDF(options: ExportPDFOptions): void {
     doc.text("Nessun incontro programmato", 20, yPosition)
   } else {
     doc.setFont("helvetica", "normal")
-    round2Meetings.forEach((meeting, index) => {
-      // Check if we need a new page
-      if (yPosition > 270) {
-        doc.addPage()
-        yPosition = 20
-      }
-
-      doc.text(`${index + 1}. ${meeting.person1} con ${meeting.person2}`, 20, yPosition)
-      yPosition += 6
-    })
+    renderRoundMeetings(doc, round2Meetings, yPosition)
   }
 
   // Add footer with generation date
@@ -119,13 +159,14 @@ export function exportToPDF(options: ExportPDFOptions): void {
     doc.text(
       `Generato il ${new Date().toLocaleDateString("it-IT")} - Pagina ${i} di ${totalPages}`,
       105,
-      287,
+      FOOTER_Y_POSITION,
       { align: "center" }
     )
   }
 
   // Generate filename with current date
-  const filename = `${eventTitle.replace(/\s+/g, "_")}_${new Date().toISOString().split("T")[0]}.pdf`
+  const sanitizedTitle = sanitizeFilename(eventTitle)
+  const filename = `${sanitizedTitle}_${new Date().toISOString().split("T")[0]}.pdf`
   
   // Save the PDF
   doc.save(filename)
