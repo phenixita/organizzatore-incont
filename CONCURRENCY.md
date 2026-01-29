@@ -51,12 +51,12 @@ if (response.status === 412) {
 
 When a conflict is detected, the system:
 
-1. Fetches the latest data from the server
+1. Refreshes the ETag from the server (to get the latest version info)
 2. Waits a short time (exponential backoff: 100ms, 200ms, 400ms)
-3. Retries the operation with fresh data
+3. Retries the write operation with the same data but updated ETag
 4. Repeats up to 3 times before failing
 
-This handles most temporary conflicts automatically without user intervention.
+**Note**: The current implementation retries with the original data value. This means if two users are making different changes, the last successful write wins. For more complex scenarios requiring data merging, the application should handle conflict resolution at a higher level (e.g., by merging arrays or objects before calling `set`).
 
 #### 3. Periodic Refresh
 

@@ -64,10 +64,8 @@ resource blobService 'Microsoft.Storage/storageAccounts/blobServices@2023-01-01'
             '*'
           ]
           exposedHeaders: [
-            'etag'
-            'x-ms-*'
             'ETag'
-            '*'
+            'x-ms-*'
           ]
           maxAgeInSeconds: 3600
         }
@@ -117,9 +115,8 @@ resource tableService 'Microsoft.Storage/storageAccounts/tableServices@2023-01-0
             '*'
           ]
           exposedHeaders: [
-            'etag'
+            'ETag'
             'x-ms-*'
-            '*'
           ]
           maxAgeInSeconds: 3600
         }

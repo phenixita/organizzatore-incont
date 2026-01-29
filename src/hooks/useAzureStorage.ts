@@ -78,6 +78,7 @@ class AzureStorageService {
 
   async set<T>(key: string, value: T, maxRetries = 3): Promise<void> {
     let lastError: Error | null = null
+    let currentValue = value
     
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       try {
@@ -96,7 +97,7 @@ class AzureStorageService {
         const response = await fetch(url, {
           method: "PUT",
           headers,
-          body: JSON.stringify(value),
+          body: JSON.stringify(currentValue),
         })
 
         if (!response.ok) {
@@ -104,8 +105,11 @@ class AzureStorageService {
             // Precondition failed - someone else modified the data
             console.warn(`Conflict detected for key ${key}, retrying... (attempt ${attempt + 1}/${maxRetries})`)
             
-            // Refresh the data from server and retry
-            await this.refresh(key, value as T)
+            // Refresh the data from server to get latest version and ETag
+            const refreshedData = await this.refresh(key, currentValue)
+            
+            // For the retry, we keep trying with the current value but with the updated ETag
+            // The application logic should handle merging/resolving if needed
             
             // Exponential backoff before retry
             await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 100))
@@ -117,7 +121,7 @@ class AzureStorageService {
 
         // Update cache with new ETag
         const newEtag = response.headers.get('etag')
-        this.cache.set(key, { data: value, etag: newEtag })
+        this.cache.set(key, { data: currentValue, etag: newEtag })
         return
       } catch (error) {
         console.error(`Error saving key ${key} (attempt ${attempt + 1}/${maxRetries}):`, error)
@@ -139,8 +143,11 @@ class AzureStorageService {
       const response = await fetch(url)
       
       if (!response.ok) {
-        console.warn(`Failed to refresh key ${key}: ${response.statusText}`)
-        return defaultValue
+        if (response.status === 404) {
+          // Blob doesn't exist, return default
+          return defaultValue
+        }
+        throw new Error(`Failed to refresh: ${response.statusText}`)
       }
 
       const data = await response.json()
@@ -149,7 +156,7 @@ class AzureStorageService {
       return data as T
     } catch (error) {
       console.error(`Error refreshing key ${key}:`, error)
-      return defaultValue
+      throw error  // Propagate error so retry logic can handle it
     }
   }
 
@@ -236,7 +243,7 @@ export function useAzureStorage<T>(
   const [value, setValue] = useState<T>(defaultValue)
   const [isLoading, setIsLoading] = useState(true)
 
-  // Load initial value
+  // Load initial value (only when key changes, not defaultValue)
   useEffect(() => {
     let mounted = true
 
@@ -260,7 +267,7 @@ export function useAzureStorage<T>(
     return () => {
       mounted = false
     }
-  }, [key, defaultValue])
+  }, [key])  // Only depend on key, not defaultValue
 
   // Update function
   const updateValue = useCallback(
@@ -297,7 +304,7 @@ export function useAzureStorageWithRefresh<T>(
   const [isLoading, setIsLoading] = useState(true)
   const [hasExternalUpdate, setHasExternalUpdate] = useState(false)
 
-  // Load initial value
+  // Load initial value (only when key changes, not defaultValue)
   useEffect(() => {
     let mounted = true
 
@@ -321,23 +328,34 @@ export function useAzureStorageWithRefresh<T>(
     return () => {
       mounted = false
     }
-  }, [key, defaultValue])
+  }, [key])  // Only depend on key, not defaultValue
 
   // Setup periodic refresh
   useEffect(() => {
+    let notificationTimeout: NodeJS.Timeout | null = null
+
     const handleUpdate = (newValue: T) => {
       setValue(newValue)
       setHasExternalUpdate(true)
+      
+      // Clear any existing timeout to avoid multiple competing timers
+      if (notificationTimeout) {
+        clearTimeout(notificationTimeout)
+      }
+      
       // Auto-clear the notification after 5 seconds
-      setTimeout(() => setHasExternalUpdate(false), 5000)
+      notificationTimeout = setTimeout(() => setHasExternalUpdate(false), 5000)
     }
 
     storageService.startPeriodicRefresh(key, defaultValue, refreshIntervalMs, handleUpdate)
 
     return () => {
       storageService.stopPeriodicRefresh(key)
+      if (notificationTimeout) {
+        clearTimeout(notificationTimeout)
+      }
     }
-  }, [key, defaultValue, refreshIntervalMs])
+  }, [key, refreshIntervalMs])  // Don't include defaultValue to avoid restarts
 
   // Update function
   const updateValue = useCallback(
