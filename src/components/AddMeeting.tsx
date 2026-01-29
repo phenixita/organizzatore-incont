@@ -2,7 +2,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { useAzureStorage } from "@/hooks/useAzureStorage"
+import { useAzureStorage, useAzureStorageWithRefresh } from "@/hooks/useAzureStorage"
 import {
     getAvailableParticipantsForRound,
     getAvailablePartners,
@@ -17,7 +17,7 @@ import { useEffect, useMemo, useState } from "react"
 import { toast } from "sonner"
 
 export default function AddMeeting() {
-  const [meetings, setMeetings] = useAzureStorage<Meeting[]>("meetings", [])
+  const [meetings, setMeetings] = useAzureStorageWithRefresh<Meeting[]>("meetings", [], 30000)
   const [participants] = useAzureStorage<ParticipantsByRound | string[]>(
     "participants",
     { round1: [], round2: [] }
@@ -117,6 +117,12 @@ export default function AddMeeting() {
         <div className="flex items-center gap-2">
           <Users size={24} weight="duotone" className="text-primary" />
           <CardTitle className="text-xl md:text-2xl">Programma un nuovo incontro</CardTitle>
+          {hasExternalUpdate && (
+            <Badge variant="outline" className="ml-auto flex items-center gap-1 animate-pulse">
+              <ArrowsClockwise size={14} weight="bold" />
+              Dati aggiornati
+            </Badge>
+          )}
         </div>
         <CardDescription className="text-base">
           Seleziona il turno, chi sei e con chi vuoi incontrarti

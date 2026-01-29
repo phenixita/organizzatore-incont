@@ -3,16 +3,16 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { useAzureStorage } from "@/hooks/useAzureStorage"
+import { useAzureStorage, useAzureStorageWithRefresh } from "@/hooks/useAzureStorage"
 import { getMeetingsForPerson, getPartnerForMeeting } from "@/lib/meeting-utils"
 import { getAllParticipants, normalizeParticipants } from "@/lib/participants"
 import { Meeting, ParticipantsByRound } from "@/lib/types"
-import { Trash, UserCircle, UsersThree } from "@phosphor-icons/react"
+import { ArrowsClockwise, Trash, UserCircle, UsersThree } from "@phosphor-icons/react"
 import { useState } from "react"
 import { toast } from "sonner"
 
 export default function SummaryByPerson() {
-  const [meetings, setMeetings] = useAzureStorage<Meeting[]>("meetings", [])
+  const [meetings, setMeetings, hasExternalUpdate] = useAzureStorageWithRefresh<Meeting[]>("meetings", [], 30000)
   const [participants] = useAzureStorage<ParticipantsByRound | string[]>(
     "participants",
     { round1: [], round2: [] }
@@ -42,6 +42,12 @@ export default function SummaryByPerson() {
         <div className="flex items-center gap-2">
           <UserCircle size={24} weight="duotone" className="text-primary" />
           <CardTitle className="text-xl md:text-2xl">Riepilogo per Persona</CardTitle>
+          {hasExternalUpdate && (
+            <Badge variant="outline" className="ml-auto flex items-center gap-1 animate-pulse">
+              <ArrowsClockwise size={14} weight="bold" />
+              Dati aggiornati
+            </Badge>
+          )}
         </div>
         <CardDescription className="text-base">
           Filtra gli incontri per vedere chi si incontra con chi

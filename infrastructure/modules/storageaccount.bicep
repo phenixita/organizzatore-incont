@@ -1,4 +1,5 @@
 // Storage Account module for application data storage
+// Enhanced with Table Storage support for better concurrent access patterns
 
 @description('Name of the storage account')
 param storageAccountName string
@@ -8,6 +9,9 @@ param location string
 
 @description('Name of the blob container for app data')
 param containerName string
+
+@description('Name of the table for concurrent data (optional)')
+param tableName string = 'meetings'
 
 @description('Tags to apply to resources')
 param tags object
@@ -37,7 +41,7 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2023-01-01' = {
   }
 }
 
-// Blob Service
+// Blob Service with enhanced CORS for ETag support
 resource blobService 'Microsoft.Storage/storageAccounts/blobServices@2023-01-01' = {
   parent: storageAccount
   name: 'default'
@@ -60,6 +64,9 @@ resource blobService 'Microsoft.Storage/storageAccounts/blobServices@2023-01-01'
             '*'
           ]
           exposedHeaders: [
+            'etag'
+            'x-ms-*'
+            'ETag'
             '*'
           ]
           maxAgeInSeconds: 3600
@@ -87,9 +94,61 @@ var containerSas = storageAccount.listServiceSas('2023-01-01', {
   signedExpiry: sasExpiry
 }).serviceSasToken
 
+// Table Service (for future concurrent access patterns)
+resource tableService 'Microsoft.Storage/storageAccounts/tableServices@2023-01-01' = {
+  parent: storageAccount
+  name: 'default'
+  properties: {
+    cors: {
+      corsRules: [
+        {
+          allowedOrigins: [
+            '*' // In production, restrict this to your Static Web App domain
+          ]
+          allowedMethods: [
+            'GET'
+            'PUT'
+            'POST'
+            'DELETE'
+            'MERGE'
+            'OPTIONS'
+          ]
+          allowedHeaders: [
+            '*'
+          ]
+          exposedHeaders: [
+            'etag'
+            'x-ms-*'
+            '*'
+          ]
+          maxAgeInSeconds: 3600
+        }
+      ]
+    }
+  }
+}
+
+// Table for storing concurrent data (optional, for future use)
+resource table 'Microsoft.Storage/storageAccounts/tableServices/tables@2023-01-01' = {
+  parent: tableService
+  name: tableName
+}
+
+// Generate a table-scoped SAS token (valid until the configured expiry)
+var tableSas = storageAccount.listServiceSas('2023-01-01', {
+  canonicalizedResource: '/table/${storageAccount.name}/${tableName}'
+  signedResource: 't'
+  signedPermission: 'raud'
+  signedProtocol: 'https'
+  signedExpiry: sasExpiry
+}).serviceSasToken
+
 // Outputs
 output storageAccountName string = storageAccount.name
 output storageAccountId string = storageAccount.id
 output containerName string = container.name
-output primaryEndpoint string = storageAccount.properties.primaryEndpoints.blob
+output tableName string = table.name
+output primaryBlobEndpoint string = storageAccount.properties.primaryEndpoints.blob
+output primaryTableEndpoint string = storageAccount.properties.primaryEndpoints.table
 output containerSas string = containerSas
+output tableSas string = tableSas
