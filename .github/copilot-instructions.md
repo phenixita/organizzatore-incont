@@ -11,7 +11,12 @@
 
 ## Storage integration
 - Azure Storage config is sourced from Vite env vars: `VITE_AZURE_STORAGE_ACCOUNT`, `VITE_AZURE_STORAGE_CONTAINER`, `VITE_AZURE_STORAGE_SAS` (see [src/hooks/useAzureStorage.ts](src/hooks/useAzureStorage.ts)).
-- `useAzureStorage()` handles read/write; it auto-creates missing blobs with the provided default and logs errors. Prefer updating via the setter returned by the hook so cache stays in sync.
+- Two hooks available:
+  - `useAzureStorage<T>(key, defaultValue)` - Returns `[value, setValue]` for basic read/write with in-memory caching
+  - `useAzureStorageWithRefresh<T>(key, defaultValue, refreshIntervalMs)` - Returns `[value, setValue, hasExternalUpdate]` for shared data that needs periodic refresh
+- For shared data (like meetings list), prefer `useAzureStorageWithRefresh()` to detect changes from other users (default: 30-second polling)
+- Storage service uses ETags for optimistic concurrency control - conflicts are automatically retried up to 3 times with exponential backoff
+- Auto-creates missing blobs with the provided default and logs errors. Prefer updating via the setter returned by the hook so cache stays in sync.
 
 ## UI patterns
 - UI primitives are Shadcn-style components under [src/components/ui](src/components/ui). Compose with Tailwind utility classes; use `cn()` from [src/lib/utils.ts](src/lib/utils.ts) for class merging.
@@ -23,5 +28,9 @@
 
 ## Conventions to follow
 - Keep scheduling logic in `lib/meeting-utils` and UI in `src/components`.
-- When adding new persisted settings, use `useAzureStorage()` with a stable key and default value, and update any UI to read via the hook rather than direct fetch.
+- When adding new persisted settings:
+  - Use `useAzureStorage()` for user-specific or infrequently-changing data
+  - Use `useAzureStorageWithRefresh()` for shared data that multiple users may modify
+  - Always use stable keys and provide sensible default values
+  - Update any UI to read via the hook rather than direct fetch
 - The build commit shown in the footer reads `VITE_BUILD_COMMIT` / `VITE_GIT_COMMIT` in [src/App.tsx](src/App.tsx); keep this pattern if you extend build metadata.
