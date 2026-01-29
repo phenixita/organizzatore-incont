@@ -6,13 +6,20 @@ import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Button } from "@/components/ui/button"
 import { UserCircle, UsersThree, Trash } from "@phosphor-icons/react"
-import { Meeting, PARTICIPANTS } from "@/lib/types"
+import { Meeting } from "@/lib/types"
 import { getMeetingsForPerson, getPartnerForMeeting } from "@/lib/meeting-utils"
 import { toast } from "sonner"
 
 export default function SummaryByPerson() {
   const [meetings, setMeetings] = useAzureStorage<Meeting[]>("meetings", [])
   const [selectedPerson, setSelectedPerson] = useState<string>("")
+
+  // Get unique participants who have at least one meeting
+  const registeredParticipants = Array.from(
+    new Set(
+      (meetings || []).flatMap((m) => [m.person1, m.person2])
+    )
+  ).sort()
 
   const personMeetings = selectedPerson
     ? getMeetingsForPerson(meetings || [], selectedPerson)
@@ -48,7 +55,7 @@ export default function SummaryByPerson() {
               <SelectValue placeholder="Scegli una persona" />
             </SelectTrigger>
             <SelectContent>
-              {PARTICIPANTS.map((person) => (
+              {registeredParticipants.map((person) => (
                 <SelectItem key={person} value={person} className="text-base">
                   {person}
                 </SelectItem>
