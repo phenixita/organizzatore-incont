@@ -1,5 +1,5 @@
-import { useState } from "react"
-import { useAzureStorage } from "@/hooks/useAzureStorage"
+import { useCallback, useState } from "react"
+import { ConcurrencyConflictError, useAzureStorage } from "@/hooks/useAzureStorage"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
@@ -11,7 +11,11 @@ import { getMeetingsForPerson, getPartnerForMeeting } from "@/lib/meeting-utils"
 import { toast } from "sonner"
 
 export default function SummaryByPerson() {
-  const [meetings, setMeetings] = useAzureStorage<Meeting[]>("meetings", [])
+  const handleConflict = useCallback((error: ConcurrencyConflictError) => {
+    toast.error(error.message, { duration: 5000 })
+  }, [])
+
+  const [meetings, setMeetings] = useAzureStorage<Meeting[]>("meetings", [], handleConflict)
   const [selectedPerson, setSelectedPerson] = useState<string>("")
 
   // Get unique participants who have at least one meeting

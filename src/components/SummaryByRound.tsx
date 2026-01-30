@@ -1,4 +1,4 @@
-import { useAzureStorage } from "@/hooks/useAzureStorage"
+import { ConcurrencyConflictError, useAzureStorage } from "@/hooks/useAzureStorage"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
@@ -9,9 +9,14 @@ import { Meeting } from "@/lib/types"
 import { getMeetingsByRound } from "@/lib/meeting-utils"
 import { exportToPDF } from "@/lib/pdf-export"
 import { toast } from "sonner"
+import { useCallback } from "react"
 
 export default function SummaryByRound() {
-  const [meetings, setMeetings] = useAzureStorage<Meeting[]>("meetings", [])
+  const handleConflict = useCallback((error: ConcurrencyConflictError) => {
+    toast.error(error.message, { duration: 5000 })
+  }, [])
+
+  const [meetings, setMeetings] = useAzureStorage<Meeting[]>("meetings", [], handleConflict)
   const [eventTitle] = useAzureStorage<string>("event-title", "Incontri 1-a-1")
   const [eventDescription] = useAzureStorage<string>("event-description", "Organizza i tuoi incontri in due turni")
   const [eventDate] = useAzureStorage<string>("event-date", "")

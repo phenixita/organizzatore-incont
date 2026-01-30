@@ -2,7 +2,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { useAzureStorage } from "@/hooks/useAzureStorage"
+import { ConcurrencyConflictError, useAzureStorage } from "@/hooks/useAzureStorage"
 import {
     getAvailablePartners,
     meetingExists,
@@ -11,11 +11,15 @@ import {
 } from "@/lib/meeting-utils"
 import { Meeting, PARTICIPANTS } from "@/lib/types"
 import { Plus, Users } from "@phosphor-icons/react"
-import { useState } from "react"
+import { useCallback, useState } from "react"
 import { toast } from "sonner"
 
 export default function AddMeeting() {
-  const [meetings, setMeetings] = useAzureStorage<Meeting[]>("meetings", [])
+  const handleConflict = useCallback((error: ConcurrencyConflictError) => {
+    toast.error(error.message, { duration: 5000 })
+  }, [])
+
+  const [meetings, setMeetings, , hasConflict] = useAzureStorage<Meeting[]>("meetings", [], handleConflict)
   const [selectedPerson, setSelectedPerson] = useState<string>("")
   const [selectedRound, setSelectedRound] = useState<"1" | "2" | "">("")
   const [selectedPartner, setSelectedPartner] = useState<string>("")
@@ -28,7 +32,7 @@ export default function AddMeeting() {
     ? personHasMeetingInRound(selectedPerson, parseInt(selectedRound) as 1 | 2, meetings || [])
     : false
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!selectedPerson || !selectedRound || !selectedPartner) {
       toast.error("Compila tutti i campi")
       return
@@ -59,13 +63,15 @@ export default function AddMeeting() {
       createdAt: new Date().toISOString()
     }
 
-    setMeetings((current) => [...(current || []), newMeeting])
+    await setMeetings((current) => [...(current || []), newMeeting])
     
-    toast.success(`Incontro programmato: ${selectedPerson} con ${selectedPartner}`)
-    
-    setSelectedPerson("")
-    setSelectedRound("")
-    setSelectedPartner("")
+    if (!hasConflict) {
+      toast.success(`Incontro programmato: ${selectedPerson} con ${selectedPartner}`)
+      
+      setSelectedPerson("")
+      setSelectedRound("")
+      setSelectedPartner("")
+    }
   }
 
   return (

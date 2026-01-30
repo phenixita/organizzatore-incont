@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 
 // Azure Storage configuration
 interface AzureStorageConfig {
@@ -18,10 +18,24 @@ function getAzureConfig(): AzureStorageConfig {
   return { storageAccountName, containerName, sasToken }
 }
 
+// Custom error for concurrency conflicts
+export class ConcurrencyConflictError extends Error {
+  constructor(key: string) {
+    super(`Conflitto di concorrenza: i dati per "${key}" sono stati modificati da un altro utente. Ricarica la pagina.`)
+    this.name = "ConcurrencyConflictError"
+  }
+}
+
+// Cached entry with ETag
+interface CacheEntry<T> {
+  value: T
+  etag: string | null
+}
+
 // Storage interface
 class AzureStorageService {
   private config: AzureStorageConfig
-  private cache: Map<string, any> = new Map()
+  private cache: Map<string, CacheEntry<unknown>> = new Map()
 
   constructor() {
     this.config = getAzureConfig()
@@ -36,10 +50,14 @@ class AzureStorageService {
     return token.startsWith("?") ? `${baseUrl}${token}` : `${baseUrl}?${token}`
   }
 
-  async get<T>(key: string, defaultValue: T): Promise<T> {
-    // Check cache first
-    if (this.cache.has(key)) {
-      return this.cache.get(key)
+  getEtag(key: string): string | null {
+    return this.cache.get(key)?.etag ?? null
+  }
+
+  async get<T>(key: string, defaultValue: T, skipCache = false): Promise<T> {
+    // Check cache first (unless explicitly skipped)
+    if (!skipCache && this.cache.has(key)) {
+      return this.cache.get(key)!.value as T
     }
 
     try {
@@ -50,18 +68,18 @@ class AzureStorageService {
         if (response.status === 404) {
           const emptyValue = defaultValue
           try {
-            await this.set(key, emptyValue)
+            await this.set(key, emptyValue, true) // isNew = true
           } catch (error) {
             console.warn(`Failed to create missing key ${key}:`, error)
           }
-          this.cache.set(key, emptyValue)
           return emptyValue
         }
         throw new Error(`Failed to fetch: ${response.statusText}`)
       }
 
+      const etag = response.headers.get("ETag")
       const data = await response.json()
-      this.cache.set(key, data)
+      this.cache.set(key, { value: data, etag })
       return data as T
     } catch (error) {
       console.error(`Error fetching key ${key}:`, error)
@@ -69,24 +87,49 @@ class AzureStorageService {
     }
   }
 
-  async set<T>(key: string, value: T): Promise<void> {
+  async set<T>(key: string, value: T, isNew = false): Promise<void> {
+    const url = this.buildUrl(key)
+    const headers: HeadersInit = {
+      "Content-Type": "application/json",
+      "x-ms-blob-type": "BlockBlob",
+    }
+
+    // Add conditional header for concurrency control
+    if (isNew) {
+      // Only create if blob doesn't exist
+      headers["If-None-Match"] = "*"
+    } else {
+      const currentEtag = this.getEtag(key)
+      if (currentEtag) {
+        // Only update if ETag matches (no one else modified it)
+        headers["If-Match"] = currentEtag
+      }
+    }
+
     try {
-      const url = this.buildUrl(key)
       const response = await fetch(url, {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          "x-ms-blob-type": "BlockBlob",
-        },
+        headers,
         body: JSON.stringify(value),
       })
+
+      // 412 Precondition Failed or 409 Conflict = concurrency conflict
+      if (response.status === 412 || response.status === 409) {
+        this.invalidateCache(key)
+        throw new ConcurrencyConflictError(key)
+      }
 
       if (!response.ok) {
         throw new Error(`Failed to save: ${response.statusText}`)
       }
 
-      this.cache.set(key, value)
+      // Update cache with new ETag
+      const newEtag = response.headers.get("ETag")
+      this.cache.set(key, { value, etag: newEtag })
     } catch (error) {
+      if (error instanceof ConcurrencyConflictError) {
+        throw error
+      }
       console.error(`Error saving key ${key}:`, error)
       throw error
     }
@@ -100,30 +143,55 @@ class AzureStorageService {
 // Singleton instance
 const storageService = new AzureStorageService()
 
+// Conflict callback type
+type ConflictCallback = (error: ConcurrencyConflictError) => void
+
 /**
- * Hook to use Azure Storage as a key-value store
+ * Hook to use Azure Storage as a key-value store with optimistic concurrency control.
+ * Returns [value, setValue, refresh, hasConflict]
+ * - value: current value
+ * - setValue: update function (may trigger conflict)
+ * - refresh: force reload from server
+ * - hasConflict: true if a concurrency conflict occurred
  */
 export function useAzureStorage<T>(
   key: string,
-  defaultValue: T
-): [T, (value: T | ((prev: T) => T)) => void] {
+  defaultValue: T,
+  onConflict?: ConflictCallback
+): [T, (value: T | ((prev: T) => T)) => Promise<void>, () => Promise<void>, boolean] {
   const [value, setValue] = useState<T>(defaultValue)
   const [isLoading, setIsLoading] = useState(true)
+  const [hasConflict, setHasConflict] = useState(false)
+  const mountedRef = useRef(true)
+
+  // Load/refresh value from server
+  const refresh = useCallback(async () => {
+    try {
+      storageService.invalidateCache(key)
+      const stored = await storageService.get(key, defaultValue, true)
+      if (mountedRef.current) {
+        setValue(stored)
+        setHasConflict(false)
+      }
+    } catch (error) {
+      console.error(`Error refreshing ${key}:`, error)
+    }
+  }, [key, defaultValue])
 
   // Load initial value
   useEffect(() => {
-    let mounted = true
+    mountedRef.current = true
 
     const loadValue = async () => {
       try {
         const stored = await storageService.get(key, defaultValue)
-        if (mounted) {
+        if (mountedRef.current) {
           setValue(stored)
         }
       } catch (error) {
         console.error(`Error loading ${key}:`, error)
       } finally {
-        if (mounted) {
+        if (mountedRef.current) {
           setIsLoading(false)
         }
       }
@@ -132,28 +200,39 @@ export function useAzureStorage<T>(
     loadValue()
 
     return () => {
-      mounted = false
+      mountedRef.current = false
     }
   }, [key, defaultValue])
 
-  // Update function
+  // Update function with concurrency control
   const updateValue = useCallback(
-    (newValue: T | ((prev: T) => T)) => {
-      setValue((prev) => {
-        const nextValue = typeof newValue === "function" 
-          ? (newValue as (prev: T) => T)(prev) 
-          : newValue
+    async (newValue: T | ((prev: T) => T)) => {
+      const nextValue = typeof newValue === "function" 
+        ? (newValue as (prev: T) => T)(value) 
+        : newValue
 
-        // Save to storage
-        storageService.set(key, nextValue).catch((error) => {
+      // Optimistically update local state
+      setValue(nextValue)
+
+      try {
+        await storageService.set(key, nextValue)
+        setHasConflict(false)
+      } catch (error) {
+        if (error instanceof ConcurrencyConflictError) {
+          // Revert optimistic update and signal conflict
+          setHasConflict(true)
+          if (onConflict) {
+            onConflict(error)
+          }
+          // Reload server value
+          await refresh()
+        } else {
           console.error(`Error saving ${key}:`, error)
-        })
-
-        return nextValue
-      })
+        }
+      }
     },
-    [key]
+    [key, value, onConflict, refresh]
   )
 
-  return [isLoading ? defaultValue : value, updateValue]
+  return [isLoading ? defaultValue : value, updateValue, refresh, hasConflict]
 }
