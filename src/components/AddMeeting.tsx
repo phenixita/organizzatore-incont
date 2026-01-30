@@ -2,7 +2,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { useAzureStorage } from "@/hooks/useAzureStorage"
+import { useMeetings } from "@/hooks/useMeetings"
 import {
     getAvailablePartners,
     meetingExists,
@@ -10,12 +10,12 @@ import {
     personHasMeetingInRound
 } from "@/lib/meeting-utils"
 import { Meeting, PARTICIPANTS } from "@/lib/types"
-import { Plus, Users } from "@phosphor-icons/react"
+import { ArrowClockwise, Plus, Users } from "@phosphor-icons/react"
 import { useState } from "react"
 import { toast } from "sonner"
 
 export default function AddMeeting() {
-  const [meetings, setMeetings] = useAzureStorage<Meeting[]>("meetings", [])
+  const [meetings, setMeetings, refresh, isStale] = useMeetings()
   const [selectedPerson, setSelectedPerson] = useState<string>("")
   const [selectedRound, setSelectedRound] = useState<"1" | "2" | "">("")
   const [selectedPartner, setSelectedPartner] = useState<string>("")
@@ -28,7 +28,12 @@ export default function AddMeeting() {
     ? personHasMeetingInRound(selectedPerson, parseInt(selectedRound) as 1 | 2, meetings || [])
     : false
 
-  const handleSubmit = () => {
+  const handleRefresh = async () => {
+    await refresh()
+    toast.info("Dati aggiornati")
+  }
+
+  const handleSubmit = async () => {
     if (!selectedPerson || !selectedRound || !selectedPartner) {
       toast.error("Compila tutti i campi")
       return
@@ -59,25 +64,38 @@ export default function AddMeeting() {
       createdAt: new Date().toISOString()
     }
 
-    setMeetings((current) => [...(current || []), newMeeting])
+    const success = await setMeetings((current) => [...(current || []), newMeeting])
     
-    toast.success(`Incontro programmato: ${selectedPerson} con ${selectedPartner}`)
-    
-    setSelectedPerson("")
-    setSelectedRound("")
-    setSelectedPartner("")
+    if (success) {
+      toast.success(`Incontro programmato: ${selectedPerson} con ${selectedPartner}`)
+      setSelectedPerson("")
+      setSelectedRound("")
+      setSelectedPartner("")
+    } else {
+      toast.error("I dati sono stati modificati da un altro utente. Ricarica e riprova.", { duration: 5000 })
+    }
   }
 
   return (
     <Card className="shadow-lg">
       <CardHeader>
-        <div className="flex items-center gap-2">
-          <Users size={24} weight="duotone" className="text-primary" />
-          <CardTitle className="text-xl md:text-2xl">Programma un nuovo incontro</CardTitle>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Users size={24} weight="duotone" className="text-primary" />
+            <CardTitle className="text-xl md:text-2xl">Programma un nuovo incontro</CardTitle>
+          </div>
+          <Button variant="ghost" size="icon" onClick={handleRefresh} title="Aggiorna dati">
+            <ArrowClockwise size={20} weight="bold" className={isStale ? "text-destructive" : ""} />
+          </Button>
         </div>
         <CardDescription className="text-base">
           Seleziona chi sei, il turno e con chi vuoi incontrarti
         </CardDescription>
+        {isStale && (
+          <p className="text-sm text-destructive font-medium mt-2">
+            ⚠️ I dati potrebbero essere cambiati. Clicca ↻ per aggiornare.
+          </p>
+        )}
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="space-y-2">

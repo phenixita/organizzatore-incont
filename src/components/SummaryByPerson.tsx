@@ -1,17 +1,17 @@
 import { useState } from "react"
-import { useAzureStorage } from "@/hooks/useAzureStorage"
+import { useMeetings } from "@/hooks/useMeetings"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Button } from "@/components/ui/button"
-import { UserCircle, UsersThree, Trash } from "@phosphor-icons/react"
+import { ArrowClockwise, UserCircle, UsersThree, Trash } from "@phosphor-icons/react"
 import { Meeting } from "@/lib/types"
 import { getMeetingsForPerson, getPartnerForMeeting } from "@/lib/meeting-utils"
 import { toast } from "sonner"
 
 export default function SummaryByPerson() {
-  const [meetings, setMeetings] = useAzureStorage<Meeting[]>("meetings", [])
+  const [meetings, setMeetings, refresh, isStale] = useMeetings()
   const [selectedPerson, setSelectedPerson] = useState<string>("")
 
   // Get unique participants who have at least one meeting
@@ -28,22 +28,41 @@ export default function SummaryByPerson() {
   const round1Meetings = personMeetings.filter((m) => m.round === 1)
   const round2Meetings = personMeetings.filter((m) => m.round === 2)
 
-  const handleDeleteMeeting = (meetingId: string, meeting: Meeting) => {
+  const handleRefresh = async () => {
+    await refresh()
+    toast.info("Dati aggiornati")
+  }
+
+  const handleDeleteMeeting = async (meetingId: string, meeting: Meeting) => {
     const partner = getPartnerForMeeting(meeting, selectedPerson)
-    setMeetings((current) => (current || []).filter((m) => m.id !== meetingId))
-    toast.success(`Incontro rimosso: ${selectedPerson} con ${partner}`)
+    const success = await setMeetings((current) => (current || []).filter((m) => m.id !== meetingId))
+    if (success) {
+      toast.success(`Incontro rimosso: ${selectedPerson} con ${partner}`)
+    } else {
+      toast.error("I dati sono stati modificati da un altro utente. Ricarica e riprova.", { duration: 5000 })
+    }
   }
 
   return (
     <Card className="shadow-lg">
       <CardHeader>
-        <div className="flex items-center gap-2">
-          <UserCircle size={24} weight="duotone" className="text-primary" />
-          <CardTitle className="text-xl md:text-2xl">Riepilogo per Persona</CardTitle>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <UserCircle size={24} weight="duotone" className="text-primary" />
+            <CardTitle className="text-xl md:text-2xl">Riepilogo per Persona</CardTitle>
+          </div>
+          <Button variant="ghost" size="icon" onClick={handleRefresh} title="Aggiorna dati">
+            <ArrowClockwise size={20} weight="bold" className={isStale ? "text-destructive" : ""} />
+          </Button>
         </div>
         <CardDescription className="text-base">
           Filtra gli incontri per vedere chi si incontra con chi
         </CardDescription>
+        {isStale && (
+          <p className="text-sm text-destructive font-medium mt-2">
+            ⚠️ I dati potrebbero essere cambiati. Clicca ↻ per aggiornare.
+          </p>
+        )}
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="space-y-2">

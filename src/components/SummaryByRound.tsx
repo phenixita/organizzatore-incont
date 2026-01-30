@@ -1,17 +1,18 @@
+import { useMeetings } from "@/hooks/useMeetings"
 import { useAzureStorage } from "@/hooks/useAzureStorage"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Button } from "@/components/ui/button"
-import { ListChecks, UsersThree, Trash, FilePdf } from "@phosphor-icons/react"
+import { ArrowClockwise, ListChecks, UsersThree, Trash, FilePdf } from "@phosphor-icons/react"
 import { Meeting } from "@/lib/types"
 import { getMeetingsByRound } from "@/lib/meeting-utils"
 import { exportToPDF } from "@/lib/pdf-export"
 import { toast } from "sonner"
 
 export default function SummaryByRound() {
-  const [meetings, setMeetings] = useAzureStorage<Meeting[]>("meetings", [])
+  const [meetings, setMeetings, refresh, isStale] = useMeetings()
   const [eventTitle] = useAzureStorage<string>("event-title", "Incontri 1-a-1")
   const [eventDescription] = useAzureStorage<string>("event-description", "Organizza i tuoi incontri in due turni")
   const [eventDate] = useAzureStorage<string>("event-date", "")
@@ -19,9 +20,18 @@ export default function SummaryByRound() {
   const round1Meetings = getMeetingsByRound(meetings || [], 1)
   const round2Meetings = getMeetingsByRound(meetings || [], 2)
 
-  const handleDeleteMeeting = (meetingId: string, person1: string, person2: string) => {
-    setMeetings((current) => (current || []).filter((m) => m.id !== meetingId))
-    toast.success(`Incontro rimosso: ${person1} con ${person2}`)
+  const handleRefresh = async () => {
+    await refresh()
+    toast.info("Dati aggiornati")
+  }
+
+  const handleDeleteMeeting = async (meetingId: string, person1: string, person2: string) => {
+    const success = await setMeetings((current) => (current || []).filter((m) => m.id !== meetingId))
+    if (success) {
+      toast.success(`Incontro rimosso: ${person1} con ${person2}`)
+    } else {
+      toast.error("I dati sono stati modificati da un altro utente. Ricarica e riprova.", { duration: 5000 })
+    }
   }
 
   const handleExportPDF = () => {
@@ -99,18 +109,28 @@ export default function SummaryByRound() {
             <ListChecks size={24} weight="duotone" className="text-primary" />
             <CardTitle className="text-xl md:text-2xl">Riepilogo per Turno</CardTitle>
           </div>
-          <Button
-            onClick={handleExportPDF}
-            disabled={(meetings || []).length === 0}
-            className="flex items-center gap-2"
-          >
-            <FilePdf size={20} weight="duotone" />
-            <span className="hidden sm:inline">Esporta PDF</span>
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" onClick={handleRefresh} title="Aggiorna dati">
+              <ArrowClockwise size={20} weight="bold" className={isStale ? "text-destructive" : ""} />
+            </Button>
+            <Button
+              onClick={handleExportPDF}
+              disabled={(meetings || []).length === 0}
+              className="flex items-center gap-2"
+            >
+              <FilePdf size={20} weight="duotone" />
+              <span className="hidden sm:inline">Esporta PDF</span>
+            </Button>
+          </div>
         </div>
         <CardDescription className="text-base">
           Visualizza tutti gli incontri organizzati per turno
         </CardDescription>
+        {isStale && (
+          <p className="text-sm text-destructive font-medium mt-2">
+            ⚠️ I dati potrebbero essere cambiati. Clicca ↻ per aggiornare.
+          </p>
+        )}
       </CardHeader>
       <CardContent className="space-y-6">
         <RoundSection round={1} meetings={round1Meetings} />

@@ -1,15 +1,21 @@
-import { useAzureStorage } from "@/hooks/useAzureStorage"
+import { useMeetings } from "@/hooks/useMeetings"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Input } from "@/components/ui/input"
-import { UsersThree, UserCircle } from "@phosphor-icons/react"
-import { Meeting } from "@/lib/types"
+import { Button } from "@/components/ui/button"
+import { ArrowClockwise, UsersThree, UserCircle } from "@phosphor-icons/react"
 import { useState, useMemo } from "react"
+import { toast } from "sonner"
 
 export default function ParticipantsList() {
-  const [meetings] = useAzureStorage<Meeting[]>("meetings", [])
+  const [meetings, , refresh, isStale] = useMeetings()
   const [searchTerm, setSearchTerm] = useState("")
+
+  const handleRefresh = async () => {
+    await refresh()
+    toast.info("Dati aggiornati")
+  }
 
   // Get unique participants and their meeting info (memoized for performance)
   const participantsData = useMemo(() => {
@@ -46,13 +52,23 @@ export default function ParticipantsList() {
   return (
     <Card className="shadow-lg">
       <CardHeader>
-        <div className="flex items-center gap-2">
-          <UsersThree size={24} weight="duotone" className="text-primary" />
-          <CardTitle className="text-xl md:text-2xl">Partecipanti Iscritti</CardTitle>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <UsersThree size={24} weight="duotone" className="text-primary" />
+            <CardTitle className="text-xl md:text-2xl">Partecipanti Iscritti</CardTitle>
+          </div>
+          <Button variant="ghost" size="icon" onClick={handleRefresh} title="Aggiorna dati">
+            <ArrowClockwise size={20} weight="bold" className={isStale ? "text-destructive" : ""} />
+          </Button>
         </div>
         <CardDescription className="text-base">
           Elenco di tutte le persone iscritte ad almeno un turno
         </CardDescription>
+        {isStale && (
+          <p className="text-sm text-destructive font-medium mt-2">
+            ⚠️ I dati potrebbero essere cambiati. Clicca ↻ per aggiornare.
+          </p>
+        )}
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="p-4 bg-primary/10 rounded-lg border border-primary/20">
