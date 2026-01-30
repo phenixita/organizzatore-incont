@@ -4,9 +4,10 @@ import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Button } from "@/components/ui/button"
-import { ArrowsClockwise, ListChecks, UsersThree, Trash } from "@phosphor-icons/react"
+import { ArrowsClockwise, ListChecks, UsersThree, Trash, FilePdf } from "@phosphor-icons/react"
 import { Meeting } from "@/lib/types"
 import { getMeetingsByRound } from "@/lib/meeting-utils"
+import { exportToPDF } from "@/lib/pdf-export"
 import { toast } from "sonner"
 
 export default function SummaryByRound() {
@@ -18,6 +19,21 @@ export default function SummaryByRound() {
   const handleDeleteMeeting = (meetingId: string, person1: string, person2: string) => {
     setMeetings((current) => (current || []).filter((m) => m.id !== meetingId))
     toast.success(`Incontro rimosso: ${person1} con ${person2}`)
+  }
+
+  const handleExportPDF = () => {
+    try {
+      exportToPDF({
+        eventTitle,
+        eventDescription,
+        eventDate,
+        meetings: meetings || []
+      })
+      toast.success("PDF esportato con successo!")
+    } catch (error) {
+      toast.error("Errore durante l'esportazione del PDF")
+      console.error("PDF export error:", error)
+    }
   }
 
   const RoundSection = ({ round, meetings }: { round: 1 | 2; meetings: Meeting[] }) => (
