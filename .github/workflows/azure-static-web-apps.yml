@@ -22,6 +22,10 @@ jobs:
     permissions:
       contents: read
       id-token: write
+    outputs:
+      storage_account_name: ${{ steps.deploy.outputs.storage_account_name }}
+      storage_container_name: ${{ steps.deploy.outputs.storage_container_name }}
+      storage_container_sas: ${{ steps.deploy.outputs.storage_container_sas }}
     env:
       PROJECT_NAME: bni-aperionetoone
       ENVIRONMENT: prod
@@ -39,9 +43,11 @@ jobs:
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: Deploy Bicep
+        id: deploy
         shell: bash
         run: |
           RESOURCE_GROUP="${PROJECT_NAME}-${ENVIRONMENT}-rg"
+          DEPLOYMENT_NAME="main"
           az group create \
             --name "$RESOURCE_GROUP" \
             --location "$LOCATION" \
@@ -49,8 +55,18 @@ jobs:
 
           az deployment group create \
             --resource-group "$RESOURCE_GROUP" \
+            --name "$DEPLOYMENT_NAME" \
             --template-file infrastructure/main.bicep \
             --parameters projectName="$PROJECT_NAME" environment="$ENVIRONMENT" location="$LOCATION"
+
+          storage_account_name=$(az deployment group show --resource-group "$RESOURCE_GROUP" --name "$DEPLOYMENT_NAME" --query "properties.outputs.storageAccountName.value" -o tsv)
+          storage_container_name=$(az deployment group show --resource-group "$RESOURCE_GROUP" --name "$DEPLOYMENT_NAME" --query "properties.outputs.storageContainerName.value" -o tsv)
+          storage_container_sas=$(az deployment group show --resource-group "$RESOURCE_GROUP" --name "$DEPLOYMENT_NAME" --query "properties.outputs.storageContainerSas.value" -o tsv)
+
+          echo "::add-mask::$storage_container_sas"
+          echo "storage_account_name=$storage_account_name" >> "$GITHUB_OUTPUT"
+          echo "storage_container_name=$storage_container_name" >> "$GITHUB_OUTPUT"
+          echo "storage_container_sas=$storage_container_sas" >> "$GITHUB_OUTPUT"
 
   build_and_deploy_job:
     if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
@@ -92,9 +108,9 @@ jobs:
         id: builddeploy
         uses: Azure/static-web-apps-deploy@v1
         env:
-          VITE_AZURE_STORAGE_ACCOUNT: ${{ vars.AZURE_STORAGE_ACCOUNT }}
-          VITE_AZURE_STORAGE_CONTAINER: ${{ vars.AZURE_STORAGE_CONTAINER }}
-          VITE_AZURE_STORAGE_SAS: ${{ secrets.AZURE_STORAGE_SAS }}
+          VITE_AZURE_STORAGE_ACCOUNT: ${{ needs.deploy_infrastructure.outputs.storage_account_name || vars.AZURE_STORAGE_ACCOUNT }}
+          VITE_AZURE_STORAGE_CONTAINER: ${{ needs.deploy_infrastructure.outputs.storage_container_name || vars.AZURE_STORAGE_CONTAINER }}
+          VITE_AZURE_STORAGE_SAS: ${{ needs.deploy_infrastructure.outputs.storage_container_sas || secrets.AZURE_STORAGE_SAS }}
           VITE_BUILD_COMMIT: ${{ github.sha }}
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
