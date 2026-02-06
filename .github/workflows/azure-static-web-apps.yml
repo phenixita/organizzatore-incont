@@ -73,6 +73,9 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
+      # Manual installation and build required due to npm optional dependencies issue
+      # Azure Static Web Apps deploy action doesn't properly install optional dependencies
+      # causing @rollup/rollup-linux-x64-gnu to be missing. See: https://github.com/npm/cli/issues/4828
       - name: Install dependencies
         run: npm install --include=optional
 
