@@ -78,7 +78,7 @@ class AzureStorageService {
 
   async set<T>(key: string, value: T, maxRetries = 3): Promise<void> {
     let lastError: Error | null = null
-    let currentValue = value
+    const currentValue = value
     
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       try {

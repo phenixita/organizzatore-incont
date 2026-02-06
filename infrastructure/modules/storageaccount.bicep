@@ -131,14 +131,14 @@ resource table 'Microsoft.Storage/storageAccounts/tableServices/tables@2023-01-0
   name: tableName
 }
 
-// Generate a table-level SAS token (valid until the configured expiry)
-var tableSas = storageAccount.listServiceSas('2023-01-01', {
-  canonicalizedResource: '/table/${storageAccount.name}/${tableName}'
-  signedResource: 't'
+// Generate a table SAS token (valid until the configured expiry)
+var tableSas = storageAccount.listAccountSas('2023-01-01', {
+  signedServices: 't'
+  signedResourceTypes: 'sco'
   signedPermission: 'raud'
   signedProtocol: 'https'
   signedExpiry: sasExpiry
-}).serviceSasToken
+}).accountSasToken
 
 // Outputs
 output storageAccountName string = storageAccount.name

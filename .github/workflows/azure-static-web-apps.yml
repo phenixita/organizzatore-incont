@@ -98,9 +98,9 @@ jobs:
 
       - name: Build application
         env:
-          VITE_AZURE_STORAGE_ACCOUNT: ${{ vars.AZURE_STORAGE_ACCOUNT }}
-          VITE_AZURE_STORAGE_CONTAINER: ${{ vars.AZURE_STORAGE_CONTAINER }}
-          VITE_AZURE_STORAGE_SAS: ${{ secrets.AZURE_STORAGE_SAS }}
+          VITE_AZURE_STORAGE_ACCOUNT: ${{ needs.deploy_infrastructure.outputs.storage_account_name || vars.AZURE_STORAGE_ACCOUNT }}
+          VITE_AZURE_STORAGE_CONTAINER: ${{ needs.deploy_infrastructure.outputs.storage_container_name || vars.AZURE_STORAGE_CONTAINER }}
+          VITE_AZURE_STORAGE_SAS: ${{ needs.deploy_infrastructure.outputs.storage_container_sas || secrets.AZURE_STORAGE_SAS }}
           VITE_BUILD_COMMIT: ${{ github.sha }}
         run: npm run build
 
@@ -120,7 +120,6 @@ jobs:
           api_location: "" # Api source code path - optional
           output_location: "" # Not used when skip_app_build is true
           skip_app_build: true
-
   close_pull_request_job:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
     runs-on: ubuntu-latest
