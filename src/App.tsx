@@ -2,6 +2,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useAzureStorage } from "@/hooks/useAzureStorage"
 import { CalendarDot } from "@phosphor-icons/react"
 import AddMeeting from "./components/AddMeeting"
+import AvailabilitySummary from "./components/AvailabilitySummary"
 import ParticipantsList from "./components/ParticipantsList"
 import SummaryByPerson from "./components/SummaryByPerson"
 import SummaryByRound from "./components/SummaryByRound"
@@ -16,27 +17,30 @@ function App() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <div className="container mx-auto max-w-4xl px-4 py-6 md:py-8 flex-1">
-        <header className="mb-8 text-center">
-          <div className="flex items-center justify-center gap-3 mb-2">
-            <CalendarDot size={40} weight="duotone" className="text-primary" />
-            <h1 className="text-3xl md:text-4xl font-bold text-foreground">
+        <header className="mb-5 text-center">
+          <div className="flex items-center justify-center gap-2 mb-1">
+            <CalendarDot size={28} weight="duotone" className="text-primary" />
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground">
               {eventTitle}
             </h1>
           </div>
-          <p className="text-muted-foreground text-base md:text-lg">
+          <p className="text-muted-foreground text-sm sm:text-base">
             {eventDescription}
           </p>
           {eventDate && (
-            <p className="text-accent font-medium text-sm md:text-base mt-2">
+            <p className="text-accent font-medium text-xs sm:text-sm mt-1">
               📅 {eventDate}
             </p>
           )}
         </header>
 
         <Tabs defaultValue="add" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 mb-6">
+          <TabsList className="grid w-full h-auto grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 mb-6">
             <TabsTrigger value="add" className="text-xs md:text-base">
               Nuovo Incontro
+            </TabsTrigger>
+            <TabsTrigger value="availability" className="text-xs md:text-base">
+              Disponibilita
             </TabsTrigger>
             <TabsTrigger value="by-round" className="text-xs md:text-base">
               Per Turno
@@ -51,6 +55,10 @@ function App() {
 
           <TabsContent value="add" className="mt-0">
             <AddMeeting />
+          </TabsContent>
+
+          <TabsContent value="availability" className="mt-0">
+            <AvailabilitySummary />
           </TabsContent>
 
           <TabsContent value="by-round" className="mt-0">

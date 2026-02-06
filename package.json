@@ -8,6 +8,7 @@
         "build": "tsc -b --noCheck && vite build",
         "lint": "eslint .",
         "optimize": "vite optimize",
+        "test": "vitest run",
         "preview": "vite preview"
     },
     "dependencies": {
@@ -85,6 +86,7 @@
         "tailwindcss": "^4.1.11",
         "typescript": "~5.7.2",
         "typescript-eslint": "^8.38.0",
+        "vitest": "^2.1.2",
         "vite": "^7.2.6"
     }
 }

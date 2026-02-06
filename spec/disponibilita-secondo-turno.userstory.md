@@ -1,0 +1,19 @@
+Come partecipante, voglio vedere dall'app chi e' libero sia nel primo che nel secondo turno quando seleziono il turno in modo da poter prenotare.
+
+## Acceptance Criteria
+- **Scenario:** Visualizzare le disponibilita' del primo turno
+	- **Given** che l'utente ha aperto la schermata delle disponibilita'
+	- **When** seleziona il primo turno
+	- **Then** vede l'elenco delle persone libere per il primo turno
+- **Scenario:** Visualizzare le disponibilita' del secondo turno
+	- **Given** che l'utente ha aperto la schermata delle disponibilita'
+	- **When** seleziona il secondo turno
+	- **Then** vede l'elenco delle persone libere per il secondo turno
+- **Scenario:** Nessun disponibile nel primo turno
+	- **Given** che l'utente ha aperto la schermata delle disponibilita'
+	- **When** seleziona il primo turno e non ci sono persone libere
+	- **Then** vede un messaggio che indica che non ci sono disponibilita'
+- **Scenario:** Nessun disponibile nel secondo turno
+	- **Given** che l'utente ha aperto la schermata delle disponibilita'
+	- **When** seleziona il secondo turno e non ci sono persone libere
+	- **Then** vede un messaggio che indica che non ci sono disponibilita'

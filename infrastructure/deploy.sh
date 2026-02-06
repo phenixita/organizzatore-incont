@@ -72,6 +72,8 @@ if [ $? -eq 0 ]; then
     STATIC_WEB_APP_URL=$(echo "$DEPLOYMENT_OUTPUT" | jq -r '.properties.outputs.staticWebAppUrl.value')
     STORAGE_ACCOUNT_NAME=$(echo "$DEPLOYMENT_OUTPUT" | jq -r '.properties.outputs.storageAccountName.value')
     STORAGE_CONTAINER_NAME=$(echo "$DEPLOYMENT_OUTPUT" | jq -r '.properties.outputs.storageContainerName.value')
+    STORAGE_CONTAINER_SAS=$(echo "$DEPLOYMENT_OUTPUT" | jq -r '.properties.outputs.storageContainerSas.value')
+    SEED_FILE="infrastructure/seed/participants.json"
     
     echo ""
     print_status "=== Deployment Summary ==="
@@ -80,6 +82,20 @@ if [ $? -eq 0 ]; then
     echo "Storage Account: $STORAGE_ACCOUNT_NAME"
     echo "Storage Container: $STORAGE_CONTAINER_NAME"
     echo ""
+
+    if [ -f "$SEED_FILE" ]; then
+        print_status "Seeding participants.json into storage..."
+        az storage blob upload \
+            --account-name "$STORAGE_ACCOUNT_NAME" \
+            --container-name "$STORAGE_CONTAINER_NAME" \
+            --name "participants.json" \
+            --file "$SEED_FILE" \
+            --sas-token "$STORAGE_CONTAINER_SAS" \
+            --content-type "application/json" \
+            --overwrite
+    else
+        print_warning "Seed file not found: $SEED_FILE"
+    fi
     
     # Get Static Web App deployment token
     print_status "Retrieving Static Web App deployment token..."

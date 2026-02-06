@@ -21,7 +21,7 @@ function getAzureConfig(): AzureStorageConfig {
 // Storage interface
 class AzureStorageService {
   private config: AzureStorageConfig
-  private cache: Map<string, any> = new Map()
+  private cache: Map<string, unknown> = new Map()
 
   constructor() {
     this.config = getAzureConfig()
@@ -39,7 +39,7 @@ class AzureStorageService {
   async get<T>(key: string, defaultValue: T): Promise<T> {
     // Check cache first
     if (this.cache.has(key)) {
-      return this.cache.get(key)
+      return this.cache.get(key) as T
     }
 
     try {

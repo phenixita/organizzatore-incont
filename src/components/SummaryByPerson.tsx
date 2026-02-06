@@ -1,25 +1,27 @@
-import { useState } from "react"
-import { useAzureStorage } from "@/hooks/useAzureStorage"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { ScrollArea } from "@/components/ui/scroll-area"
 import { Button } from "@/components/ui/button"
-import { UserCircle, UsersThree, Trash } from "@phosphor-icons/react"
-import { Meeting } from "@/lib/types"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useAzureStorage } from "@/hooks/useAzureStorage"
 import { getMeetingsForPerson, getPartnerForMeeting } from "@/lib/meeting-utils"
+import { getAllParticipants, normalizeParticipants } from "@/lib/participants"
+import { Meeting, ParticipantsByRound } from "@/lib/types"
+import { Trash, UserCircle, UsersThree } from "@phosphor-icons/react"
+import { useState } from "react"
 import { toast } from "sonner"
 
 export default function SummaryByPerson() {
   const [meetings, setMeetings] = useAzureStorage<Meeting[]>("meetings", [])
+  const [participants] = useAzureStorage<ParticipantsByRound | string[]>(
+    "participants",
+    { round1: [], round2: [] }
+  )
   const [selectedPerson, setSelectedPerson] = useState<string>("")
 
-  // Get unique participants who have at least one meeting
-  const registeredParticipants = Array.from(
-    new Set(
-      (meetings || []).flatMap((m) => [m.person1, m.person2])
-    )
-  ).sort()
+  const registeredParticipants = getAllParticipants(
+    normalizeParticipants(participants)
+  )
 
   const personMeetings = selectedPerson
     ? getMeetingsForPerson(meetings || [], selectedPerson)

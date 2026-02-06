@@ -1,10 +1,11 @@
-import { ComponentProps } from "react"
 import ChevronLeftIcon from "lucide-react/dist/esm/icons/chevron-left"
 import ChevronRightIcon from "lucide-react/dist/esm/icons/chevron-right"
 import MoreHorizontalIcon from "lucide-react/dist/esm/icons/more-horizontal"
+import { ComponentProps } from "react"
 
+import { Button } from "@/components/ui/button"
+import { buttonVariants } from "@/components/ui/button-variants"
 import { cn } from "@/lib/utils"
-import { Button, buttonVariants } from "@/components/ui/button"
 
 function Pagination({ className, ...props }: ComponentProps<"nav">) {
   return (
@@ -115,11 +116,7 @@ function PaginationEllipsis({
 }
 
 export {
-  Pagination,
-  PaginationContent,
-  PaginationLink,
-  PaginationItem,
-  PaginationPrevious,
-  PaginationNext,
-  PaginationEllipsis,
+    Pagination,
+    PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious
 }
+

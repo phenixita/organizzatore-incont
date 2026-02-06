@@ -1,19 +1,25 @@
-import { useAzureStorage } from "@/hooks/useAzureStorage"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
-import { ScrollArea } from "@/components/ui/scroll-area"
 import { Button } from "@/components/ui/button"
-import { ListChecks, UsersThree, Trash } from "@phosphor-icons/react"
-import { Meeting } from "@/lib/types"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Separator } from "@/components/ui/separator"
+import { useAzureStorage } from "@/hooks/useAzureStorage"
 import { getMeetingsByRound } from "@/lib/meeting-utils"
+import { Meeting } from "@/lib/types"
+import { ListChecks, Trash, UsersThree } from "@phosphor-icons/react"
+import { useMemo } from "react"
 import { toast } from "sonner"
 
 export default function SummaryByRound() {
   const [meetings, setMeetings] = useAzureStorage<Meeting[]>("meetings", [])
-
-  const round1Meetings = getMeetingsByRound(meetings || [], 1)
-  const round2Meetings = getMeetingsByRound(meetings || [], 2)
+  const round1Meetings = useMemo(
+    () => getMeetingsByRound(meetings || [], 1),
+    [meetings]
+  )
+  const round2Meetings = useMemo(
+    () => getMeetingsByRound(meetings || [], 2),
+    [meetings]
+  )
 
   const handleDeleteMeeting = (meetingId: string, person1: string, person2: string) => {
     setMeetings((current) => (current || []).filter((m) => m.id !== meetingId))
@@ -85,9 +91,9 @@ export default function SummaryByRound() {
       </CardHeader>
       <CardContent className="space-y-6">
         <RoundSection round={1} meetings={round1Meetings} />
-        
+
         <Separator className="my-6" />
-        
+
         <RoundSection round={2} meetings={round2Meetings} />
       </CardContent>
     </Card>

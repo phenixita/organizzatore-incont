@@ -4,28 +4,71 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useAzureStorage } from "@/hooks/useAzureStorage"
 import {
+    getAvailableParticipantsForRound,
     getAvailablePartners,
     meetingExists,
     meetingPairExistsAnyRound,
     personHasMeetingInRound
 } from "@/lib/meeting-utils"
-import { Meeting, PARTICIPANTS } from "@/lib/types"
+import { getParticipantsForRound, normalizeParticipants } from "@/lib/participants"
+import { Meeting, ParticipantsByRound } from "@/lib/types"
 import { Plus, Users } from "@phosphor-icons/react"
-import { useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { toast } from "sonner"
 
 export default function AddMeeting() {
   const [meetings, setMeetings] = useAzureStorage<Meeting[]>("meetings", [])
+  const [participants] = useAzureStorage<ParticipantsByRound | string[]>(
+    "participants",
+    { round1: [], round2: [] }
+  )
   const [selectedPerson, setSelectedPerson] = useState<string>("")
   const [selectedRound, setSelectedRound] = useState<"1" | "2" | "">("")
   const [selectedPartner, setSelectedPartner] = useState<string>("")
 
-  const availablePartners = selectedPerson && selectedRound
-    ? getAvailablePartners(selectedPerson, parseInt(selectedRound) as 1 | 2, meetings || [], PARTICIPANTS)
+  const participantsByRound = useMemo(
+    () => normalizeParticipants(participants),
+    [participants]
+  )
+
+  const participantsForRound = useMemo(() => {
+    if (selectedRound === "1") {
+      return getParticipantsForRound(participantsByRound, 1).sort()
+    }
+    if (selectedRound === "2") {
+      return getParticipantsForRound(participantsByRound, 2).sort()
+    }
+    return []
+  }, [participantsByRound, selectedRound])
+
+  const selectedRoundNumber = selectedRound === "1" ? 1 : selectedRound === "2" ? 2 : null
+
+  const availableParticipantsForRound = useMemo(() => {
+    if (!selectedRoundNumber) {
+      return []
+    }
+    return getAvailableParticipantsForRound(
+      selectedRoundNumber,
+      meetings || [],
+      participantsForRound
+    )
+  }, [meetings, participantsForRound, selectedRoundNumber])
+
+  useEffect(() => {
+    setSelectedPerson("")
+    setSelectedPartner("")
+  }, [selectedRound])
+
+  useEffect(() => {
+    setSelectedPartner("")
+  }, [selectedPerson])
+
+  const availablePartners = selectedPerson && selectedRoundNumber
+    ? getAvailablePartners(selectedPerson, selectedRoundNumber, meetings || [], availableParticipantsForRound)
     : []
 
-  const currentPersonHasMeeting = selectedPerson && selectedRound
-    ? personHasMeetingInRound(selectedPerson, parseInt(selectedRound) as 1 | 2, meetings || [])
+  const currentPersonHasMeeting = selectedPerson && selectedRoundNumber
+    ? personHasMeetingInRound(selectedPerson, selectedRoundNumber, meetings || [])
     : false
 
   const handleSubmit = () => {
@@ -76,28 +119,10 @@ export default function AddMeeting() {
           <CardTitle className="text-xl md:text-2xl">Programma un nuovo incontro</CardTitle>
         </div>
         <CardDescription className="text-base">
-          Seleziona chi sei, il turno e con chi vuoi incontrarti
+          Seleziona il turno, chi sei e con chi vuoi incontrarti
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-foreground">
-            Chi sei?
-          </label>
-          <Select value={selectedPerson} onValueChange={setSelectedPerson}>
-            <SelectTrigger className="h-12 text-base">
-              <SelectValue placeholder="Seleziona il tuo nome" />
-            </SelectTrigger>
-            <SelectContent>
-              {PARTICIPANTS.map((person) => (
-                <SelectItem key={person} value={person} className="text-base">
-                  {person}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
         <div className="space-y-2">
           <label className="text-sm font-medium text-foreground">
             Quale turno?
@@ -119,6 +144,36 @@ export default function AddMeeting() {
                   Secondo Turno
                 </div>
               </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-foreground">
+            Chi sei?
+          </label>
+          <Select
+            value={selectedPerson}
+            onValueChange={setSelectedPerson}
+            disabled={!selectedRound || availableParticipantsForRound.length === 0}
+          >
+            <SelectTrigger className="h-12 text-base">
+              <SelectValue
+                placeholder={
+                  !selectedRound
+                    ? "Prima seleziona il turno"
+                    : availableParticipantsForRound.length === 0
+                      ? "Nessuno disponibile"
+                      : "Seleziona il tuo nome"
+                }
+              />
+            </SelectTrigger>
+            <SelectContent>
+              {availableParticipantsForRound.map((person) => (
+                <SelectItem key={person} value={person} className="text-base">
+                  {person}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>

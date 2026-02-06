@@ -81,6 +81,7 @@ if ($LASTEXITCODE -eq 0) {
     $storageAccountName = $deploymentOutput.properties.outputs.storageAccountName.value
     $storageContainerName = $deploymentOutput.properties.outputs.storageContainerName.value
     $storageContainerSas = $deploymentOutput.properties.outputs.storageContainerSas.value
+    $seedFile = Join-Path (Split-Path -Parent $MyInvocation.MyCommand.Path) "seed/participants.json"
 
     Write-Host ""
     Write-Info "=== Deployment Summary ==="
@@ -94,6 +95,22 @@ if ($LASTEXITCODE -eq 0) {
     Write-Host ""
     Write-Info "=== Post-Deployment Configuration (Automated) ==="
     Write-Host ""
+
+    if (Test-Path $seedFile) {
+        Write-Info "Seeding participants.json into storage..."
+        $sanitizedSas = $storageContainerSas.TrimStart("?")
+        az storage blob upload `
+            --account-name $storageAccountName `
+            --container-name $storageContainerName `
+            --name "participants.json" `
+            --file $seedFile `
+            --sas-token $sanitizedSas `
+            --content-type "application/json" `
+            --overwrite true `
+            --only-show-errors | Out-Null
+    } else {
+        Write-WarningMessage "Seed file not found: $seedFile"
+    }
 
     Write-WarningMessage "1. Add this GitHub secret to your repository (manual step):"
     Write-Host "   Secret Name: AZURE_STATIC_WEB_APPS_API_TOKEN"
