@@ -80,6 +80,11 @@ jobs:
         run: npm install --include=optional
 
       - name: Build application
+        env:
+          VITE_AZURE_STORAGE_ACCOUNT: ${{ vars.AZURE_STORAGE_ACCOUNT }}
+          VITE_AZURE_STORAGE_CONTAINER: ${{ vars.AZURE_STORAGE_CONTAINER }}
+          VITE_AZURE_STORAGE_SAS: ${{ secrets.AZURE_STORAGE_SAS }}
+          VITE_BUILD_COMMIT: ${{ github.sha }}
         run: npm run build
 
       - name: Build And Deploy
