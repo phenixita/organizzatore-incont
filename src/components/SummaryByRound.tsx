@@ -5,25 +5,38 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
 import { useAzureStorage } from "@/hooks/useAzureStorage"
 import { getMeetingsByRound } from "@/lib/meeting-utils"
+import { exportToPDF } from "@/lib/pdf-export"
 import { Meeting } from "@/lib/types"
-import { ListChecks, Trash, UsersThree } from "@phosphor-icons/react"
-import { useMemo } from "react"
+import { FilePdf, ListChecks, Trash, UsersThree } from "@phosphor-icons/react"
 import { toast } from "sonner"
 
 export default function SummaryByRound() {
   const [meetings, setMeetings] = useAzureStorage<Meeting[]>("meetings", [])
-  const round1Meetings = useMemo(
-    () => getMeetingsByRound(meetings || [], 1),
-    [meetings]
-  )
-  const round2Meetings = useMemo(
-    () => getMeetingsByRound(meetings || [], 2),
-    [meetings]
-  )
+  const [eventTitle] = useAzureStorage<string>("event-title", "Incontri 1-a-1")
+  const [eventDescription] = useAzureStorage<string>("event-description", "Organizza i tuoi incontri in due turni")
+  const [eventDate] = useAzureStorage<string>("event-date", "")
+
+  const round1Meetings = getMeetingsByRound(meetings || [], 1)
+  const round2Meetings = getMeetingsByRound(meetings || [], 2)
 
   const handleDeleteMeeting = (meetingId: string, person1: string, person2: string) => {
     setMeetings((current) => (current || []).filter((m) => m.id !== meetingId))
     toast.success(`Incontro rimosso: ${person1} con ${person2}`)
+  }
+
+  const handleExportPDF = () => {
+    try {
+      exportToPDF({
+        eventTitle,
+        eventDescription,
+        eventDate,
+        meetings: meetings || []
+      })
+      toast.success("PDF esportato con successo!")
+    } catch (error) {
+      toast.error("Errore durante l'esportazione del PDF")
+      console.error("PDF export error:", error)
+    }
   }
 
   const RoundSection = ({ round, meetings }: { round: 1 | 2; meetings: Meeting[] }) => (
@@ -81,9 +94,19 @@ export default function SummaryByRound() {
   return (
     <Card className="shadow-lg">
       <CardHeader>
-        <div className="flex items-center gap-2">
-          <ListChecks size={24} weight="duotone" className="text-primary" />
-          <CardTitle className="text-xl md:text-2xl">Riepilogo per Turno</CardTitle>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <ListChecks size={24} weight="duotone" className="text-primary" />
+            <CardTitle className="text-xl md:text-2xl">Riepilogo per Turno</CardTitle>
+          </div>
+          <Button
+            onClick={handleExportPDF}
+            disabled={(meetings || []).length === 0}
+            className="flex items-center gap-2"
+          >
+            <FilePdf size={20} weight="duotone" />
+            <span className="hidden sm:inline">Esporta PDF</span>
+          </Button>
         </div>
         <CardDescription className="text-base">
           Visualizza tutti gli incontri organizzati per turno
