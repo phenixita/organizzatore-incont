@@ -124,11 +124,11 @@ export default function AddMeeting() {
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="space-y-2">
-          <label className="text-sm font-medium text-foreground">
+          <label htmlFor="round-select" className="text-sm font-medium text-foreground">
             Quale turno?
           </label>
           <Select value={selectedRound} onValueChange={(val) => setSelectedRound(val as "1" | "2")}>
-            <SelectTrigger className="h-12 text-base">
+            <SelectTrigger id="round-select" className="h-12 text-base">
               <SelectValue placeholder="Seleziona il turno" />
             </SelectTrigger>
             <SelectContent>
@@ -149,7 +149,7 @@ export default function AddMeeting() {
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-medium text-foreground">
+          <label htmlFor="person-select" className="text-sm font-medium text-foreground">
             Chi sei?
           </label>
           <Select
@@ -157,7 +157,7 @@ export default function AddMeeting() {
             onValueChange={setSelectedPerson}
             disabled={!selectedRound || availableParticipantsForRound.length === 0}
           >
-            <SelectTrigger className="h-12 text-base">
+            <SelectTrigger id="person-select" className="h-12 text-base">
               <SelectValue
                 placeholder={
                   !selectedRound
@@ -179,7 +179,7 @@ export default function AddMeeting() {
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-medium text-foreground">
+          <label htmlFor="partner-select" className="text-sm font-medium text-foreground">
             Con chi ti vuoi incontrare?
           </label>
           <Select 
@@ -187,7 +187,7 @@ export default function AddMeeting() {
             onValueChange={setSelectedPartner}
             disabled={!selectedPerson || !selectedRound || currentPersonHasMeeting}
           >
-            <SelectTrigger className="h-12 text-base">
+            <SelectTrigger id="partner-select" className="h-12 text-base">
               <SelectValue placeholder={
                 !selectedPerson || !selectedRound 
                   ? "Prima seleziona nome e turno" 
