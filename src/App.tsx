@@ -3,6 +3,7 @@ import { useAzureStorage } from "@/hooks/useAzureStorage"
 import { CalendarDot } from "@phosphor-icons/react"
 import AddMeeting from "./components/AddMeeting"
 import AvailabilitySummary from "./components/AvailabilitySummary"
+import BestPractices121 from "./components/BestPractices121"
 import ParticipantsList from "./components/ParticipantsList"
 import SummaryByPerson from "./components/SummaryByPerson"
 import SummaryByRound from "./components/SummaryByRound"
@@ -35,7 +36,7 @@ function App() {
         </header>
 
         <Tabs defaultValue="add" className="w-full">
-          <TabsList className="grid w-full h-auto grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 mb-6">
+          <TabsList className="grid w-full h-auto grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 mb-6">
             <TabsTrigger value="add" className="text-xs md:text-base">
               Nuovo Incontro
             </TabsTrigger>
@@ -47,6 +48,12 @@ function App() {
             </TabsTrigger>
             <TabsTrigger value="by-person" className="text-xs md:text-base">
               Per Persona
+            </TabsTrigger>
+            <TabsTrigger
+              value="best-practices"
+              className="text-xs md:text-base border-accent/40 bg-accent/10 data-[state=active]:bg-accent data-[state=active]:text-accent-foreground"
+            >
+              I 7 segreti 121
             </TabsTrigger>
             <TabsTrigger value="participants" className="text-xs md:text-base">
               Partecipanti
@@ -67,6 +74,10 @@ function App() {
 
           <TabsContent value="by-person" className="mt-0">
             <SummaryByPerson />
+          </TabsContent>
+
+          <TabsContent value="best-practices" className="mt-0">
+            <BestPractices121 />
           </TabsContent>
 
           <TabsContent value="participants" className="mt-0">
