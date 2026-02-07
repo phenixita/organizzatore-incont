@@ -1,13 +1,20 @@
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { ScrollArea } from "@/components/ui/scroll-area"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 import { useAzureStorage } from "@/hooks/useAzureStorage"
 import { getMeetingsForPerson, getPartnerForMeeting } from "@/lib/meeting-utils"
 import { getAllParticipants, normalizeParticipants } from "@/lib/participants"
 import { Meeting, ParticipantsByRound } from "@/lib/types"
-import { Trash, UserCircle, UsersThree } from "@phosphor-icons/react"
+import { Trash, UserCircle } from "@phosphor-icons/react"
 import { useState } from "react"
 import { toast } from "sonner"
 
@@ -36,29 +43,76 @@ export default function SummaryByPerson() {
     toast.success(`Incontro rimosso: ${selectedPerson} con ${partner}`)
   }
 
+  const RoundTable = ({ round, roundMeetings }: { round: 1 | 2; roundMeetings: Meeting[] }) => {
+    if (roundMeetings.length === 0) return null
+    return (
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <Badge variant={round === 1 ? "default" : "secondary"}>
+            Turno {round}
+          </Badge>
+          <span className="text-xs text-muted-foreground">
+            {roundMeetings.length} {roundMeetings.length === 1 ? "incontro" : "incontri"}
+          </span>
+        </div>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-10 text-center">#</TableHead>
+              <TableHead>Incontra</TableHead>
+              <TableHead className="w-10" />
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {roundMeetings.map((meeting, idx) => (
+              <TableRow key={meeting.id}>
+                <TableCell className="text-center text-muted-foreground text-xs">
+                  {idx + 1}
+                </TableCell>
+                <TableCell className="font-medium">
+                  {getPartnerForMeeting(meeting, selectedPerson)}
+                </TableCell>
+                <TableCell className="text-right p-0">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 hover:bg-destructive/10 hover:text-destructive"
+                    onClick={() => handleDeleteMeeting(meeting.id, meeting)}
+                  >
+                    <Trash size={14} weight="bold" />
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    )
+  }
+
   return (
     <Card className="shadow-lg">
-      <CardHeader>
+      <CardHeader className="pb-3">
         <div className="flex items-center gap-2">
           <UserCircle size={24} weight="duotone" className="text-primary" />
           <CardTitle className="text-xl md:text-2xl">Riepilogo per Persona</CardTitle>
         </div>
-        <CardDescription className="text-base">
-          Filtra gli incontri per vedere chi si incontra con chi
+        <CardDescription>
+          Filtra gli incontri per persona
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-5">
         <div className="space-y-2">
           <label className="text-sm font-medium text-foreground">
             Seleziona una persona
           </label>
           <Select value={selectedPerson} onValueChange={setSelectedPerson}>
-            <SelectTrigger className="h-12 text-base">
+            <SelectTrigger className="h-10">
               <SelectValue placeholder="Scegli una persona" />
             </SelectTrigger>
             <SelectContent>
               {registeredParticipants.map((person) => (
-                <SelectItem key={person} value={person} className="text-base">
+                <SelectItem key={person} value={person}>
                   {person}
                 </SelectItem>
               ))}
@@ -67,79 +121,16 @@ export default function SummaryByPerson() {
         </div>
 
         {selectedPerson && (
-          <div className="space-y-4 mt-6">
-            <h3 className="text-lg font-semibold text-foreground">
-              Incontri di {selectedPerson}
-            </h3>
-
+          <div className="space-y-5">
             {personMeetings.length === 0 ? (
-              <p className="text-muted-foreground text-center py-8">
+              <p className="text-muted-foreground text-center py-4 text-sm">
                 Nessun incontro programmato
               </p>
             ) : (
-              <ScrollArea className="h-[400px] pr-4">
-                <div className="space-y-4">
-                  {round1Meetings.length > 0 && (
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <Badge variant="default" className="text-sm px-2 py-1">
-                          Turno 1
-                        </Badge>
-                      </div>
-                      {round1Meetings.map((meeting) => (
-                        <Card key={meeting.id} className="bg-card hover:bg-muted/50 transition-colors">
-                          <CardContent className="p-4">
-                            <div className="flex items-center gap-3">
-                              <UsersThree size={24} weight="duotone" className="text-primary flex-shrink-0" />
-                              <p className="font-medium text-base md:text-lg flex-1">
-                                {getPartnerForMeeting(meeting, selectedPerson)}
-                              </p>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleDeleteMeeting(meeting.id, meeting)}
-                                className="flex-shrink-0 hover:bg-destructive/10 hover:text-destructive"
-                              >
-                                <Trash size={20} weight="duotone" />
-                              </Button>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  )}
-
-                  {round2Meetings.length > 0 && (
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <Badge variant="secondary" className="text-sm px-2 py-1">
-                          Turno 2
-                        </Badge>
-                      </div>
-                      {round2Meetings.map((meeting) => (
-                        <Card key={meeting.id} className="bg-card hover:bg-muted/50 transition-colors">
-                          <CardContent className="p-4">
-                            <div className="flex items-center gap-3">
-                              <UsersThree size={24} weight="duotone" className="text-primary flex-shrink-0" />
-                              <p className="font-medium text-base md:text-lg flex-1">
-                                {getPartnerForMeeting(meeting, selectedPerson)}
-                              </p>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleDeleteMeeting(meeting.id, meeting)}
-                                className="flex-shrink-0 hover:bg-destructive/10 hover:text-destructive"
-                              >
-                                <Trash size={20} weight="duotone" />
-                              </Button>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </ScrollArea>
+              <>
+                <RoundTable round={1} roundMeetings={round1Meetings} />
+                <RoundTable round={2} roundMeetings={round2Meetings} />
+              </>
             )}
           </div>
         )}
