@@ -1,9 +1,12 @@
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useAzureStorage } from "@/hooks/useAzureStorage"
 import { CalendarDot } from "@phosphor-icons/react"
 import AddMeeting from "./components/AddMeeting"
 import AvailabilitySummary from "./components/AvailabilitySummary"
 import BestPractices121 from "./components/BestPractices121"
+import OneToOneTimer from "./components/OneToOneTimer"
 import ParticipantsList from "./components/ParticipantsList"
 import SummaryByPerson from "./components/SummaryByPerson"
 import SummaryByRound from "./components/SummaryByRound"
@@ -36,7 +39,7 @@ function App() {
         </header>
 
         <Tabs defaultValue="add" className="w-full">
-          <TabsList className="grid w-full h-auto grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 mb-6">
+          <TabsList className="grid w-full h-auto grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-2 mb-6">
             <TabsTrigger value="add" className="text-xs md:text-base">
               Nuovo Incontro
             </TabsTrigger>
@@ -48,6 +51,9 @@ function App() {
             </TabsTrigger>
             <TabsTrigger value="by-person" className="text-xs md:text-base">
               Per Persona
+            </TabsTrigger>
+            <TabsTrigger value="timer" className="text-xs md:text-base">
+              Timer 121
             </TabsTrigger>
             <TabsTrigger
               value="best-practices"
@@ -76,6 +82,10 @@ function App() {
             <SummaryByPerson />
           </TabsContent>
 
+          <TabsContent value="timer" className="mt-0">
+            <OneToOneTimer />
+          </TabsContent>
+
           <TabsContent value="best-practices" className="mt-0">
             <BestPractices121 />
           </TabsContent>
@@ -84,6 +94,48 @@ function App() {
             <ParticipantsList />
           </TabsContent>
         </Tabs>
+
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle className="text-lg sm:text-xl">Domande frequenti</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Accordion type="single" collapsible className="w-full">
+              <AccordionItem value="whatsapp">
+                <AccordionTrigger className="text-sm sm:text-base">
+                  L'app e integrata con WhatsApp e i relativi sondaggi?
+                </AccordionTrigger>
+                <AccordionContent className="text-muted-foreground text-sm sm:text-base leading-relaxed">
+                  No, l'app non e integrata con WhatsApp e con i sondaggi di WhatsApp.
+                </AccordionContent>
+              </AccordionItem>
+              <AccordionItem value="organizzazione">
+                <AccordionTrigger className="text-sm sm:text-base">
+                  Come organizzo gli incontri?
+                </AccordionTrigger>
+                <AccordionContent className="text-muted-foreground text-sm sm:text-base leading-relaxed">
+                  Gli incontri vanno organizzati fuori dall'app e poi registrati qui dentro. Basta che lo faccia uno dei due.
+                </AccordionContent>
+              </AccordionItem>
+              <AccordionItem value="suggerimenti">
+                <AccordionTrigger className="text-sm sm:text-base">
+                  Posso inviare suggerimenti?
+                </AccordionTrigger>
+                <AccordionContent className="text-muted-foreground text-sm sm:text-base leading-relaxed">
+                  Certo, ogni suggerimento e ben accetto.
+                </AccordionContent>
+              </AccordionItem>
+              <AccordionItem value="programma">
+                <AccordionTrigger className="text-sm sm:text-base">
+                  Perche potrei trovare errori o cose da migliorare?
+                </AccordionTrigger>
+                <AccordionContent className="text-muted-foreground text-sm sm:text-base leading-relaxed">
+                  Stai partecipando a un programma sperimentale: errori e cose da migliorare sono normali. Ogni feedback e prezioso!
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          </CardContent>
+        </Card>
       </div>
       <footer className="py-3 text-center text-xs text-muted-foreground">
         Build: {shortCommit}
