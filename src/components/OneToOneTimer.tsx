@@ -32,15 +32,15 @@ export default function OneToOneTimer() {
   const [selectedMeetingId, setSelectedMeetingId] = useState<string>("")
   
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
-  const audioRef = useRef<HTMLAudioElement | null>(null)
+  const audioContextRef = useRef<AudioContext | null>(null)
   
-  // Initialize audio element for turn change signal
+  // Initialize audio context
   useEffect(() => {
-    // Create a simple beep sound using Web Audio API
-    audioRef.current = new Audio()
+    audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)()
     return () => {
-      if (audioRef.current) {
-        audioRef.current = null
+      if (audioContextRef.current) {
+        audioContextRef.current.close()
+        audioContextRef.current = null
       }
     }
   }, [])
@@ -79,8 +79,10 @@ export default function OneToOneTimer() {
   }, [currentSpeaker])
   
   const playTurnChangeSound = () => {
-    // Create a simple beep sound using Web Audio API
-    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
+    // Reuse the audio context to avoid creating multiple contexts
+    if (!audioContextRef.current) return
+    
+    const audioContext = audioContextRef.current
     const oscillator = audioContext.createOscillator()
     const gainNode = audioContext.createGain()
     
@@ -272,7 +274,7 @@ export default function OneToOneTimer() {
                     ? 'bg-primary text-primary-foreground shadow-lg scale-105' 
                     : 'bg-muted/50'
                 }`}>
-                  <p className="text-xs text-muted-foreground">Prima persona</p>
+                  <p className={`text-xs ${currentSpeaker === selectedMeeting.person1 ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>Prima persona</p>
                   <p className="font-bold text-lg">{selectedMeeting.person1}</p>
                   {currentSpeaker === selectedMeeting.person1 && (
                     <Badge className="mt-1 bg-primary-foreground text-primary">In corso</Badge>
@@ -286,7 +288,7 @@ export default function OneToOneTimer() {
                     ? 'bg-primary text-primary-foreground shadow-lg scale-105' 
                     : 'bg-muted/50'
                 }`}>
-                  <p className="text-xs text-muted-foreground">Seconda persona</p>
+                  <p className={`text-xs ${currentSpeaker === selectedMeeting.person2 ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>Seconda persona</p>
                   <p className="font-bold text-lg">{selectedMeeting.person2}</p>
                   {currentSpeaker === selectedMeeting.person2 && (
                     <Badge className="mt-1 bg-primary-foreground text-primary">In corso</Badge>
