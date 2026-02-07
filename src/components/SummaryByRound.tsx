@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import {
   Table,
   TableBody,
+  TableCaption,
   TableCell,
   TableHead,
   TableHeader,
@@ -62,6 +63,7 @@ export default function SummaryByRound() {
         </p>
       ) : (
         <Table>
+          <TableCaption className="sr-only">Elenco incontri turno {round}</TableCaption>
           <TableHeader>
             <TableRow>
               <TableHead className="w-10 text-center">#</TableHead>
@@ -83,6 +85,7 @@ export default function SummaryByRound() {
                     variant="ghost"
                     size="icon"
                     className="h-7 w-7 hover:bg-destructive/10 hover:text-destructive"
+                    aria-label={`Rimuovi incontro: ${meeting.person1} con ${meeting.person2}`}
                     onClick={() => handleDeleteMeeting(meeting.id, meeting.person1, meeting.person2)}
                   >
                     <Trash size={14} weight="bold" />
@@ -109,6 +112,7 @@ export default function SummaryByRound() {
             disabled={(meetings || []).length === 0}
             size="sm"
             className="flex items-center gap-2"
+            aria-label="Esporta PDF"
           >
             <FilePdf size={18} weight="duotone" />
             <span className="hidden sm:inline">Esporta PDF</span>

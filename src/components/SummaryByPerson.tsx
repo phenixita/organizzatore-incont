@@ -5,6 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   Table,
   TableBody,
+  TableCaption,
   TableCell,
   TableHead,
   TableHeader,
@@ -56,6 +57,9 @@ export default function SummaryByPerson() {
           </span>
         </div>
         <Table>
+          <TableCaption className="sr-only">
+            Elenco incontri turno {round} per {selectedPerson}
+          </TableCaption>
           <TableHeader>
             <TableRow>
               <TableHead className="w-10 text-center">#</TableHead>
@@ -77,6 +81,7 @@ export default function SummaryByPerson() {
                     variant="ghost"
                     size="icon"
                     className="h-7 w-7 hover:bg-destructive/10 hover:text-destructive"
+                    aria-label={`Rimuovi incontro: ${selectedPerson} con ${getPartnerForMeeting(meeting, selectedPerson)}`}
                     onClick={() => handleDeleteMeeting(meeting.id, meeting)}
                   >
                     <Trash size={14} weight="bold" />
@@ -103,11 +108,11 @@ export default function SummaryByPerson() {
       </CardHeader>
       <CardContent className="space-y-5">
         <div className="space-y-2">
-          <label className="text-sm font-medium text-foreground">
+          <label htmlFor="person-summary-select" className="text-sm font-medium text-foreground">
             Seleziona una persona
           </label>
           <Select value={selectedPerson} onValueChange={setSelectedPerson}>
-            <SelectTrigger className="h-10">
+            <SelectTrigger id="person-summary-select" className="h-10">
               <SelectValue placeholder="Scegli una persona" />
             </SelectTrigger>
             <SelectContent>
