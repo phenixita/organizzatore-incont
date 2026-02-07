@@ -4,6 +4,7 @@ import { CalendarDot } from "@phosphor-icons/react"
 import AddMeeting from "./components/AddMeeting"
 import AvailabilitySummary from "./components/AvailabilitySummary"
 import BestPractices121 from "./components/BestPractices121"
+import OneToOneTimer from "./components/OneToOneTimer"
 import ParticipantsList from "./components/ParticipantsList"
 import SummaryByPerson from "./components/SummaryByPerson"
 import SummaryByRound from "./components/SummaryByRound"
@@ -36,7 +37,7 @@ function App() {
         </header>
 
         <Tabs defaultValue="add" className="w-full">
-          <TabsList className="grid w-full h-auto grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 mb-6">
+          <TabsList className="grid w-full h-auto grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-2 mb-6">
             <TabsTrigger value="add" className="text-xs md:text-base">
               Nuovo Incontro
             </TabsTrigger>
@@ -48,6 +49,9 @@ function App() {
             </TabsTrigger>
             <TabsTrigger value="by-person" className="text-xs md:text-base">
               Per Persona
+            </TabsTrigger>
+            <TabsTrigger value="timer" className="text-xs md:text-base">
+              Timer 121
             </TabsTrigger>
             <TabsTrigger
               value="best-practices"
@@ -74,6 +78,10 @@ function App() {
 
           <TabsContent value="by-person" className="mt-0">
             <SummaryByPerson />
+          </TabsContent>
+
+          <TabsContent value="timer" className="mt-0">
+            <OneToOneTimer />
           </TabsContent>
 
           <TabsContent value="best-practices" className="mt-0">
