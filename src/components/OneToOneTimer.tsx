@@ -1,6 +1,7 @@
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Progress } from "@/components/ui/progress"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -20,6 +21,11 @@ export default function OneToOneTimer() {
   const [remainingSeconds, setRemainingSeconds] = useState<number>(DEFAULT_DURATION_MINUTES * 60)
   const [isRunning, setIsRunning] = useState<boolean>(false)
   const [hasStarted, setHasStarted] = useState<boolean>(false)
+  const [checklist, setChecklist] = useState({
+    scambiatoModuli: false,
+    spiegatoClienteIdeale: false,
+    decisaAzione: false,
+  })
   
   // Meeting selection state
   const [selectedRound, setSelectedRound] = useState<"1" | "2" | "">("")
@@ -154,6 +160,10 @@ export default function OneToOneTimer() {
   
   const handleMeetingChange = (value: string) => {
     setSelectedMeetingId(value)
+  }
+
+  const handleChecklistChange = (key: keyof typeof checklist) => (checked: boolean | "indeterminate") => {
+    setChecklist(prev => ({ ...prev, [key]: checked === true }))
   }
   
   const formatTime = (seconds: number): string => {
@@ -335,6 +345,37 @@ export default function OneToOneTimer() {
             <ArrowCounterClockwise size={20} />
             Reset
           </Button>
+        </div>
+
+        {/* Checklist */}  
+        <div className="space-y-3 rounded-lg bg-muted/30 p-4">
+          <h3 className="text-sm font-semibold">Checklist one-to-one</h3>
+          <div className="space-y-3">
+            <label className="flex items-start gap-3 rounded-md border border-muted-foreground/20 bg-background p-3 text-sm leading-5">
+              <Checkbox
+                className="mt-0.5 size-5"
+                checked={checklist.scambiatoModuli}
+                onCheckedChange={handleChecklistChange("scambiatoModuli")}
+              />
+              <span>Scambiato i moduli?</span>
+            </label>
+            <label className="flex items-start gap-3 rounded-md border border-muted-foreground/20 bg-background p-3 text-sm leading-5">
+              <Checkbox
+                className="mt-0.5 size-5"
+                checked={checklist.spiegatoClienteIdeale}
+                onCheckedChange={handleChecklistChange("spiegatoClienteIdeale")}
+              />
+              <span>Spiegato il tipo di cliente ideale che si sta cercando?</span>
+            </label>
+            <label className="flex items-start gap-3 rounded-md border border-muted-foreground/20 bg-background p-3 text-sm leading-5">
+              <Checkbox
+                className="mt-0.5 size-5"
+                checked={checklist.decisaAzione}
+                onCheckedChange={handleChecklistChange("decisaAzione")}
+              />
+              <span>Decisa una azione di uscita o da fare per costruire una referenza?</span>
+            </label>
+          </div>
         </div>
         
         {/* Info */}
