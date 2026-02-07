@@ -114,7 +114,6 @@ export default function SummaryByRound() {
             <span className="hidden sm:inline">Esporta PDF</span>
           </Button>
         </div>
-        </div>
         <CardDescription className="text-base">
           Visualizza tutti gli incontri organizzati per turno
         </CardDescription>
