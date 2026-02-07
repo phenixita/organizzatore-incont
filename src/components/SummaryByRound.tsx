@@ -1,13 +1,19 @@
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Separator } from "@/components/ui/separator"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 import { useAzureStorage } from "@/hooks/useAzureStorage"
 import { getMeetingsByRound } from "@/lib/meeting-utils"
 import { exportToPDF } from "@/lib/pdf-export"
 import { Meeting } from "@/lib/types"
-import { FilePdf, ListChecks, Trash, UsersThree } from "@phosphor-icons/react"
+import { FilePdf, ListChecks, Trash } from "@phosphor-icons/react"
 import { toast } from "sonner"
 
 export default function SummaryByRound() {
@@ -39,61 +45,60 @@ export default function SummaryByRound() {
     }
   }
 
-  const RoundSection = ({ round, meetings }: { round: 1 | 2; meetings: Meeting[] }) => (
-    <div className="space-y-4">
+  const RoundTable = ({ round, meetings: roundMeetings }: { round: 1 | 2; meetings: Meeting[] }) => (
+    <div className="space-y-2">
       <div className="flex items-center gap-2">
-        <Badge variant={round === 1 ? "default" : "secondary"} className="text-base px-3 py-1">
+        <Badge variant={round === 1 ? "default" : "secondary"}>
           Turno {round}
         </Badge>
-        <span className="text-sm text-muted-foreground">
-          {meetings.length} {meetings.length === 1 ? "incontro" : "incontri"}
+        <span className="text-xs text-muted-foreground">
+          {roundMeetings.length} {roundMeetings.length === 1 ? "incontro" : "incontri"}
         </span>
       </div>
-      
-      {meetings.length === 0 ? (
-        <p className="text-muted-foreground text-center py-8">
-          Nessun incontro programmato per questo turno
+
+      {roundMeetings.length === 0 ? (
+        <p className="text-muted-foreground text-center py-4 text-sm">
+          Nessun incontro programmato
         </p>
       ) : (
-        <ScrollArea className="h-[300px] pr-4">
-          <div className="space-y-2">
-            {meetings.map((meeting) => (
-              <Card key={meeting.id} className="bg-card hover:bg-muted/50 transition-colors">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-3">
-                    <UsersThree size={24} weight="duotone" className="text-primary flex-shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-base md:text-lg leading-tight">
-                        {meeting.person1}
-                      </p>
-                      <p className="text-muted-foreground text-sm">
-                        con
-                      </p>
-                      <p className="font-medium text-base md:text-lg leading-tight">
-                        {meeting.person2}
-                      </p>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleDeleteMeeting(meeting.id, meeting.person1, meeting.person2)}
-                      className="flex-shrink-0 hover:bg-destructive/10 hover:text-destructive"
-                    >
-                      <Trash size={20} weight="duotone" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-10 text-center">#</TableHead>
+              <TableHead>Persona 1</TableHead>
+              <TableHead>Persona 2</TableHead>
+              <TableHead className="w-10" />
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {roundMeetings.map((meeting, idx) => (
+              <TableRow key={meeting.id}>
+                <TableCell className="text-center text-muted-foreground text-xs">
+                  {idx + 1}
+                </TableCell>
+                <TableCell className="font-medium">{meeting.person1}</TableCell>
+                <TableCell className="font-medium">{meeting.person2}</TableCell>
+                <TableCell className="text-right p-0">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 hover:bg-destructive/10 hover:text-destructive"
+                    onClick={() => handleDeleteMeeting(meeting.id, meeting.person1, meeting.person2)}
+                  >
+                    <Trash size={14} weight="bold" />
+                  </Button>
+                </TableCell>
+              </TableRow>
             ))}
-          </div>
-        </ScrollArea>
+          </TableBody>
+        </Table>
       )}
     </div>
   )
 
   return (
     <Card className="shadow-lg">
-      <CardHeader>
+      <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <ListChecks size={24} weight="duotone" className="text-primary" />
@@ -102,22 +107,20 @@ export default function SummaryByRound() {
           <Button
             onClick={handleExportPDF}
             disabled={(meetings || []).length === 0}
+            size="sm"
             className="flex items-center gap-2"
           >
-            <FilePdf size={20} weight="duotone" />
+            <FilePdf size={18} weight="duotone" />
             <span className="hidden sm:inline">Esporta PDF</span>
           </Button>
         </div>
-        <CardDescription className="text-base">
-          Visualizza tutti gli incontri organizzati per turno
+        <CardDescription>
+          Tutti gli incontri organizzati per turno
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-6">
-        <RoundSection round={1} meetings={round1Meetings} />
-
-        <Separator className="my-6" />
-
-        <RoundSection round={2} meetings={round2Meetings} />
+      <CardContent className="space-y-5">
+        <RoundTable round={1} meetings={round1Meetings} />
+        <RoundTable round={2} meetings={round2Meetings} />
       </CardContent>
     </Card>
   )
