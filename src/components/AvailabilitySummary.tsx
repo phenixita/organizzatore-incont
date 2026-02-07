@@ -1,7 +1,13 @@
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Separator } from "@/components/ui/separator"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 import { useAzureStorage } from "@/hooks/useAzureStorage"
 import { getAvailableParticipantsForRound } from "@/lib/meeting-utils"
 import { getParticipantsForRound, normalizeParticipants } from "@/lib/participants"
@@ -9,7 +15,7 @@ import { Meeting, ParticipantsByRound } from "@/lib/types"
 import { ListChecks } from "@phosphor-icons/react"
 import { useMemo } from "react"
 
-function AvailabilitySection({
+function AvailabilityTable({
   round,
   participants,
   available
@@ -19,38 +25,43 @@ function AvailabilitySection({
   available: string[]
 }) {
   return (
-    <div className="space-y-4">
+    <div className="space-y-2">
       <div className="flex items-center gap-2">
         <Badge variant={round === 1 ? "default" : "secondary"}>
           Turno {round}
         </Badge>
-        <span className="text-sm text-muted-foreground">
+        <span className="text-xs text-muted-foreground">
           {available.length} {available.length === 1 ? "libero" : "liberi"}
         </span>
       </div>
 
       {participants.length === 0 ? (
-        <p className="text-muted-foreground text-center py-6">
-          Nessun partecipante registrato per questo turno
+        <p className="text-muted-foreground text-center py-4 text-sm">
+          Nessun partecipante registrato
         </p>
       ) : available.length === 0 ? (
-        <p className="text-muted-foreground text-center py-6">
-          Nessun partecipante libero in questo turno
+        <p className="text-muted-foreground text-center py-4 text-sm">
+          Nessun partecipante libero
         </p>
       ) : (
-        <ScrollArea className="h-[240px] pr-4">
-          <div className="space-y-2">
-            {available.map((person) => (
-              <Card key={`${round}-${person}`} className="bg-card hover:bg-muted/50 transition-colors">
-                <CardContent className="p-3">
-                  <p className="font-medium text-base md:text-lg">
-                    {person}
-                  </p>
-                </CardContent>
-              </Card>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-10 text-center">#</TableHead>
+              <TableHead>Partecipante</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {available.map((person, idx) => (
+              <TableRow key={`${round}-${person}`}>
+                <TableCell className="text-center text-muted-foreground text-xs">
+                  {idx + 1}
+                </TableCell>
+                <TableCell className="font-medium">{person}</TableCell>
+              </TableRow>
             ))}
-          </div>
-        </ScrollArea>
+          </TableBody>
+        </Table>
       )}
     </div>
   )
@@ -90,25 +101,23 @@ export default function AvailabilitySummary() {
 
   return (
     <Card className="shadow-lg">
-      <CardHeader>
+      <CardHeader className="pb-3">
         <div className="flex items-center gap-2">
           <ListChecks size={24} weight="duotone" className="text-primary" />
           <CardTitle className="text-xl md:text-2xl">Disponibilita</CardTitle>
         </div>
-        <CardDescription className="text-base">
-          Persone libere per turno senza dover selezionare nulla
+        <CardDescription>
+          Persone libere per turno
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-6">
-        <AvailabilitySection
+      <CardContent className="space-y-5">
+        <AvailabilityTable
           round={1}
           participants={round1Participants}
           available={round1Available}
         />
 
-        <Separator className="my-6" />
-
-        <AvailabilitySection
+        <AvailabilityTable
           round={2}
           participants={round2Participants}
           available={round2Available}
